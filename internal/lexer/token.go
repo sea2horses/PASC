@@ -1,21 +1,8 @@
 package lexer;
 
-type Keyword int8
-
-const (
-	// Main
-	ALGORITMO Keyword = iota
-	FINALGORITMO
-
-	// i/o
-	ESCRIBIR
-	LEER
-
-	// Flow Control
-)
-
 type TokenType int8
 
+/* TODO: Add character tokens like , = etc. */
 const (
 	// Literals
 	KEYWORD TokenType = iota
@@ -24,6 +11,11 @@ const (
 	NUMBER_LITERAL
 	BOOLEAN_LITERAL
 )
+
+type Position struct {
+	Line uint32
+	Column uint32
+}
 
 // Token struct
 type Token struct {
