@@ -115,7 +115,7 @@ func (l *Lexer) parse_identifier() (*Token, error) {
 	/* Else, emmit the token */
 	value := l.Src[init_position:end_position]
 
-	_, ok := mapToKeyword(value);
+	_, ok := MapToKeyword(value);
 
 	/* TODO: Parse boolean literals */
 	if ok {

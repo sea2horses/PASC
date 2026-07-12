@@ -1,5 +1,6 @@
 package lexer;
 
+//go:generate stringer -type=TokenType
 type TokenType int8
 
 /* TODO: Add character tokens like , = etc. */

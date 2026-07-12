@@ -1,4 +1,1 @@
 package main;
-
-interface Values {
-}

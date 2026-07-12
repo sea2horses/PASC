@@ -2,6 +2,7 @@ package lexer
 
 import "strings"
 
+//go:generate stringer -type=Keyword
 type Keyword int8
 
 const (
@@ -16,7 +17,7 @@ const (
 	// Flow Control
 )
 
-func mapToKeyword(str []rune) (Keyword, bool) {
+func MapToKeyword(str []rune) (Keyword, bool) {
 	val, ok := keywordMap[strings.ToLower(string(str))]
 	return val, ok
 }
