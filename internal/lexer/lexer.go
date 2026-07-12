@@ -77,7 +77,13 @@ func (l *Lexer) advance() error {
 
 /* Skip Whitespace */
 func (l *Lexer) skip_whitespace() {
-	for ch, err := l.getch(); err == nil && unicode.IsSpace(ch); l.advance() {}
+	for {
+		ch, err := l.getch()
+
+		if err != nil || !unicode.IsSpace(ch) { break }
+
+		l.advance()
+	}
 }
 
 /* Parse identifiers */
@@ -85,7 +91,13 @@ func (l *Lexer) parse_identifier() (*Token, error) {
 	init_position := l.positionInSrc;
 
 	/* Run until reaching the end of the file or putting a stop */
-	for ch, err := l.getch(); err == nil && (unicode.IsLetter(ch) || unicode.IsNumber(ch) || ch == '_'); l.advance() {}
+	for {
+		ch, err := l.getch()
+
+		if err != nil || (!unicode.IsLetter(ch) && !unicode.IsNumber(ch) && ch != '_') { break }
+
+		l.advance()
+	}
 
 	end_position := l.positionInSrc;
 
@@ -121,7 +133,13 @@ func (l *Lexer) parse_string_literal() (*Token, error) {
 	l.advance();
 
 	/* Run until reaching the end of the file or putting a stop */
-	for ch, err := l.getch(); err == nil && ch != '"'; l.advance() {}
+	for {
+		ch, err := l.getch()
+
+		if err != nil || ch == '"' { break }
+
+		l.advance()
+	}
 
 	end_position := l.positionInSrc;
 
@@ -149,6 +167,9 @@ func (l *Lexer) parse_string_literal() (*Token, error) {
 
 	/* Emit string token */
 	value := l.Src[init_position + 1:end_position]
+
+	/* Skip last '"' */
+	l.advance()
 
 	return &Token{Type: STRING_LITERAL, Value: string(value)}, nil
 }
