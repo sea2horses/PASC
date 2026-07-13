@@ -2,8 +2,12 @@ package lexer
 
 import (
 	"fmt"
+	"pseint-compiled/internal/models"
 	"unicode"
 )
+
+/* DON'T TOUCH! */
+var NULL_TOKEN = Token{Type: EOF}
 
 type ErrOutOfBounds struct {
 	Max uint32
@@ -37,13 +41,12 @@ const (
 /* Lexer struct */
 type Lexer struct {
 	Src []rune /* Loaded source code */
-	positionInSrc uint32
-	positionInFile Position
+	position models.Position
 }
 
 /* Get character at current position */
 func (l *Lexer) getch() (rune, error) {
-	return l.at(l.positionInSrc)
+	return l.at(l.position.Offset)
 }
 
 /* Get character at any position */
@@ -65,14 +68,23 @@ func (l *Lexer) advance() error {
 
 	/* If there is a line break, reset the column and add to the line in file */
 	if ch == '\n' {
-		l.positionInFile.Line++;
-		l.positionInFile.Column = 1;
+		l.position.Line++;
+		l.position.Column = 1;
 	} else {
-		l.positionInFile.Column++;
+		l.position.Column++;
 	}
 
-	l.positionInSrc++;
+	l.position.Offset++;
 	return nil
+}
+
+/* Emit a token */
+func (l *Lexer) emmit(token_type TokenType, value string, span models.Span) Token {
+	return Token{
+		Value: value,
+		Type: token_type,
+		Span: span,
+	}
 }
 
 /* Skip Whitespace */
@@ -87,8 +99,8 @@ func (l *Lexer) skip_whitespace() {
 }
 
 /* Parse identifiers */
-func (l *Lexer) parse_identifier() (*Token, error) {
-	init_position := l.positionInSrc;
+func (l *Lexer) parse_identifier() (Token, error) {
+	init_position := l.position;
 
 	/* Run until reaching the end of the file or putting a stop */
 	for {
@@ -99,35 +111,36 @@ func (l *Lexer) parse_identifier() (*Token, error) {
 		l.advance()
 	}
 
-	end_position := l.positionInSrc;
+	end_position := l.position;
 
-	init_ch, err := l.at(init_position);
+	init_ch, err := l.at(init_position.Offset);
 
 	if err != nil {
-		return nil, err
+		return NULL_TOKEN, err
 	}
 
 	/* If first char is NOT an identifier friendly character, throw an error */
 	if !unicode.IsLetter(init_ch) && init_ch != '_' {
-		return nil, ErrExpectedIdentifier
+		return NULL_TOKEN, ErrExpectedIdentifier
 	}
 	
 	/* Else, emmit the token */
-	value := l.Src[init_position:end_position]
+	value := l.Src[init_position.Offset:end_position.Offset]
 
-	_, ok := MapToKeyword(value);
+	_, ok := MapToKeyword(value)
+	token_type := IDENTIFIER
+
+	if ok {
+		token_type = KEYWORD
+	}
 
 	/* TODO: Parse boolean literals */
-	if ok {
-		return &Token{ Type: KEYWORD, Value: string(value) }, nil
-	} else {
-		return &Token{ Type: IDENTIFIER, Value: string(value) }, nil
-	}
+	return l.emmit(token_type, string(value), models.Span{ Start: init_position, End: end_position }), nil
 }
 
 /* Parse string literal */
-func (l *Lexer) parse_string_literal() (*Token, error) {
-	init_position := l.positionInSrc;
+func (l *Lexer) parse_string_literal() (Token, error) {
+	init_position := l.position;
 
 	/* Skip first " */
 	l.advance();
@@ -141,37 +154,37 @@ func (l *Lexer) parse_string_literal() (*Token, error) {
 		l.advance()
 	}
 
-	end_position := l.positionInSrc;
+	end_position := l.position;
 
 	/* Check that the init position and the end poisiton exist */
-	init_ch, err := l.at(init_position);
+	init_ch, err := l.at(init_position.Offset);
 
 	if err != nil {
-		return nil, err
+		return NULL_TOKEN, err
 	}
 
-	end_ch, err := l.at(end_position);
+	end_ch, err := l.at(end_position.Offset);
 
 	if err != nil {
-		return nil, err
+		return NULL_TOKEN, err
 	}
 
 	/* Check that both ends of our string are good */
 	if init_ch != '"' {
-		return nil, ErrExpectedString
+		return NULL_TOKEN, ErrExpectedString
 	}
 
 	if end_ch != '"' {
-		return nil, ErrUnterminatedString
+		return NULL_TOKEN, ErrUnterminatedString
 	}
 
 	/* Emit string token */
-	value := l.Src[init_position + 1:end_position]
+	value := l.Src[init_position.Offset + 1:end_position.Offset]
 
 	/* Skip last '"' */
 	l.advance()
 
-	return &Token{Type: STRING_LITERAL, Value: string(value)}, nil
+	return l.emmit(STRING_LITERAL, string(value), models.Span{Start: init_position, End: end_position}), nil
 }
 
 /* TODO: Parse char */
@@ -182,7 +195,7 @@ func (l *Lexer) Tokenize() ([]Token, error) {
 	tokens := []Token{}
 
 	/* While there is source code to parse */
-	for l.positionInSrc < uint32(len(l.Src)) {
+	for l.position.Offset < uint32(len(l.Src)) {
 		ch, _ := l.getch()
 
 		if unicode.IsSpace(ch) {
@@ -192,13 +205,13 @@ func (l *Lexer) Tokenize() ([]Token, error) {
 			if err != nil {
 				return nil, err
 			}
-			tokens = append(tokens, *token)
+			tokens = append(tokens, token)
 		} else if unicode.IsLetter(ch) || ch == '_' {
 			token, err := l.parse_identifier()
 			if err != nil {
 				return nil, err
 			}
-			tokens = append(tokens, *token)
+			tokens = append(tokens, token)
 		} else {
 			return nil, ErrUnexpectedChar{Char: ch}
 		}

@@ -1,4 +1,6 @@
-package lexer;
+package lexer
+
+import "pseint-compiled/internal/models"
 
 //go:generate stringer -type=TokenType
 type TokenType int8
@@ -11,15 +13,14 @@ const (
 	STRING_LITERAL
 	NUMBER_LITERAL
 	BOOLEAN_LITERAL
-)
 
-type Position struct {
-	Line uint32
-	Column uint32
-}
+	// Special
+	EOF
+)
 
 // Token struct
 type Token struct {
 	Type TokenType /* Type of the token */
 	Value string /* Value of the token */
+	Span models.Span /* Span of the token */
 }
