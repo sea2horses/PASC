@@ -27,7 +27,7 @@ func Write[T Value](values... T) {
 	for _, value := range values {
 		switch val := any(value).(type) {
 		case int64:
-			writer.WriteString(strconv.FormatInt(val, 64))
+			writer.WriteString(strconv.FormatInt(val, 10))
 		case string:
 			writer.WriteString(val)
 		case float64:
