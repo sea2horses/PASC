@@ -41,10 +41,12 @@ func Write(values... any) {
 		}
 		writer.WriteRune('\n')
 	}
+	writer.Flush()
 }
 
 func Read[T Value](dest *T) {
 	writer.WriteString("> ")
+	writer.Flush()
 
 	/* TODO: Catch error from ReadLine */
 	input, _, _ := reader.ReadLine()
