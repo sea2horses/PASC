@@ -41,8 +41,8 @@ type Parser struct {
 	position uint32
 }
 
-func (p *Parser) Parse() {
-
+func (p *Parser) Parse() (Node, error) {
+	return p.parse_main_function()
 }
 
 func (p *Parser) at(position uint32) (*lexer.Token, error) {
@@ -67,6 +67,9 @@ func (p *Parser) eat_token(token_type lexer.TokenType) (string, error) {
 	if token.Type != token_type {
 		return "", ErrExpectedToken{Got: token.Type, Expected: token_type}
 	}
+
+	p.position++
+	fmt.Printf("Ate token type: %s\n", token_type)
 
 	return token.Value, nil
 }
@@ -121,12 +124,26 @@ func (p *Parser) parse_main_function() (*MainFunction, error) {
 		return nil, err
 	}
 
+	var stmts []Stmt
+	for {
+		stmt, err := p.parse_statement()
+		if err != nil {
+			return nil, err
+		}
+
+		if stmt == nil {
+			break
+		}
+
+		stmts = append(stmts, stmt)
+	}
+
 	_, err = p.eat_keyword(lexer.FINALGORITMO)
 	if err != nil {
 		return nil, err
 	}
 
-	return &MainFunction{Name: fn_name, Stmts: []Stmt{}}, nil
+	return &MainFunction{Name: fn_name, Stmts: stmts}, nil
 }
 
 func (p *Parser) parse_statement() (Stmt, error) {
@@ -164,7 +181,7 @@ func (p *Parser) parse_keyword() (Stmt, error) {
 		return p.parse_write()
 	}
 
-	return nil, ErrNotImplemented
+	return nil, nil
 }
 
 func (p *Parser) parse_write() (Stmt, error) {

@@ -23,9 +23,9 @@ func RuntimeError(msg string) {
 	panic(msg)
 }
 
-func Write[T Value](values... T) {
+func Write(values... any) {
 	for _, value := range values {
-		switch val := any(value).(type) {
+		switch val := value.(type) {
 		case int64:
 			writer.WriteString(strconv.FormatInt(val, 10))
 		case string:
