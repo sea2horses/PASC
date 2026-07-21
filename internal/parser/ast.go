@@ -19,13 +19,6 @@ func (ni *NodeInfo) Span() models.Span {
 type Node interface {
 	Span() models.Span
 	String() string
-	Accept(visitor Visitor) error
-}
-
-type Visitor interface {
-	VisitStringLiteral(node *StringLiteral) error
-	VisitWrite(node *Write) error
-	VisitMainFunction(node *MainFunction) error
 }
 
 type Expr interface {
@@ -50,8 +43,22 @@ func (sl StringLiteral) String() string {
 	return fmt.Sprintf("\"%s\"", sl.Content)
 }
 
-func (sl *StringLiteral) Accept(visitor Visitor) error {
-	return visitor.VisitStringLiteral(sl)
+type NumberLiteral struct {
+	NodeInfo
+	Value float64
+}
+
+func (nl NumberLiteral) String() string {
+	return fmt.Sprintf("%f", nl.Value)
+}
+
+type BoolLiteral struct {
+	NodeInfo
+	Value bool
+}
+
+func (bl BoolLiteral) String() string {
+	return fmt.Sprintf("%t", bl.Value)
 }
 
 type Write struct {
@@ -61,10 +68,6 @@ type Write struct {
 
 func (w Write) String() string {
 	return fmt.Sprintf("Write %s", w.Print)
-}
-
-func (w *Write) Accept(visitor Visitor) error {
-	return visitor.VisitWrite(w)
 }
 
 type MainFunction struct {
@@ -83,8 +86,4 @@ func (mf MainFunction) String() string {
 	builder.WriteString("}")
 
 	return builder.String()
-}
-
-func (mf *MainFunction) Accept(visitor Visitor) error {
-	return visitor.VisitMainFunction(mf)
 }

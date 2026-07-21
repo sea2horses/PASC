@@ -6,6 +6,10 @@ import (
 	"pseint-compiled/internal/parser"
 )
 
+const (
+	RUNTIME_WRITE_FUNCTION = "Write"
+)
+
 type CodeGenerator struct {
 	buffer bytes.Buffer
 	padding uint8
@@ -33,7 +37,8 @@ func (cg *CodeGenerator) write_node(node parser.Node, buffer *bytes.Buffer) {
 		buffer.WriteString(n.Content)
 		buffer.WriteRune('"')
 	case *parser.Write:
-		buffer.WriteString("Write(")
+		buffer.WriteString(RUNTIME_WRITE_FUNCTION)
+		buffer.WriteString("(")
 		cg.write_node(n.Print, buffer)
 		buffer.WriteString(")")
 		cg.newline()

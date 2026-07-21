@@ -10,7 +10,7 @@ import (
 var NULL_TOKEN = Token{Type: EOF}
 
 type ErrOutOfBounds struct {
-	Max uint32
+	Max   uint32
 	Value uint32
 }
 
@@ -34,13 +34,14 @@ func (e LexerErr) Error() string {
 
 const (
 	ErrExpectedIdentifier = LexerErr("expected identifier")
-	ErrExpectedString = LexerErr("expected string")
+	ErrExpectedString     = LexerErr("expected string")
+	ErrExpectedNumber     = LexerErr("expected number")
 	ErrUnterminatedString = LexerErr("unterminated string")
 )
 
 /* Lexer struct */
 type Lexer struct {
-	Src []rune /* Loaded source code */
+	Src      []rune /* Loaded source code */
 	position models.Position
 }
 
@@ -68,13 +69,13 @@ func (l *Lexer) advance() error {
 
 	/* If there is a line break, reset the column and add to the line in file */
 	if ch == '\n' {
-		l.position.Line++;
-		l.position.Column = 1;
+		l.position.Line++
+		l.position.Column = 1
 	} else {
-		l.position.Column++;
+		l.position.Column++
 	}
 
-	l.position.Offset++;
+	l.position.Offset++
 	return nil
 }
 
@@ -82,8 +83,8 @@ func (l *Lexer) advance() error {
 func (l *Lexer) emmit(token_type TokenType, value string, span models.Span) Token {
 	return Token{
 		Value: value,
-		Type: token_type,
-		Span: span,
+		Type:  token_type,
+		Span:  span,
 	}
 }
 
@@ -92,7 +93,9 @@ func (l *Lexer) skip_whitespace() {
 	for {
 		ch, err := l.getch()
 
-		if err != nil || !unicode.IsSpace(ch) { break }
+		if err != nil || !unicode.IsSpace(ch) {
+			break
+		}
 
 		l.advance()
 	}
@@ -100,20 +103,22 @@ func (l *Lexer) skip_whitespace() {
 
 /* Parse identifiers */
 func (l *Lexer) parse_identifier() (Token, error) {
-	init_position := l.position;
+	init_position := l.position
 
 	/* Run until reaching the end of the file or putting a stop */
 	for {
 		ch, err := l.getch()
 
-		if err != nil || (!unicode.IsLetter(ch) && !unicode.IsNumber(ch) && ch != '_') { break }
+		if err != nil || (!unicode.IsLetter(ch) && !unicode.IsNumber(ch) && ch != '_') {
+			break
+		}
 
 		l.advance()
 	}
 
-	end_position := l.position;
+	end_position := l.position
 
-	init_ch, err := l.at(init_position.Offset);
+	init_ch, err := l.at(init_position.Offset)
 
 	if err != nil {
 		return NULL_TOKEN, err
@@ -123,7 +128,7 @@ func (l *Lexer) parse_identifier() (Token, error) {
 	if !unicode.IsLetter(init_ch) && init_ch != '_' {
 		return NULL_TOKEN, ErrExpectedIdentifier
 	}
-	
+
 	/* Else, emmit the token */
 	value := l.Src[init_position.Offset:end_position.Offset]
 
@@ -134,36 +139,45 @@ func (l *Lexer) parse_identifier() (Token, error) {
 		token_type = KEYWORD
 	}
 
-	/* TODO: Parse boolean literals */
-	return l.emmit(token_type, string(value), models.Span{ Start: init_position, End: end_position }), nil
+	/* Try parse bool literal */
+	if !ok {
+		_, ok := MapToBool(value)
+		if ok {
+			token_type = BOOLEAN_LITERAL
+		}
+	}
+
+	return l.emmit(token_type, string(value), models.Span{Start: init_position, End: end_position}), nil
 }
 
 /* Parse string literal */
 func (l *Lexer) parse_string_literal() (Token, error) {
-	init_position := l.position;
+	init_position := l.position
 
 	/* Skip first " */
-	l.advance();
+	l.advance()
 
 	/* Run until reaching the end of the file or putting a stop */
 	for {
 		ch, err := l.getch()
 
-		if err != nil || ch == '"' { break }
+		if err != nil || ch == '"' {
+			break
+		}
 
 		l.advance()
 	}
 
-	end_position := l.position;
+	end_position := l.position
 
 	/* Check that the init position and the end poisiton exist */
-	init_ch, err := l.at(init_position.Offset);
+	init_ch, err := l.at(init_position.Offset)
 
 	if err != nil {
 		return NULL_TOKEN, err
 	}
 
-	end_ch, err := l.at(end_position.Offset);
+	end_ch, err := l.at(end_position.Offset)
 
 	if err != nil {
 		return NULL_TOKEN, err
@@ -179,12 +193,48 @@ func (l *Lexer) parse_string_literal() (Token, error) {
 	}
 
 	/* Emit string token */
-	value := l.Src[init_position.Offset + 1:end_position.Offset]
+	value := l.Src[init_position.Offset+1 : end_position.Offset]
 
 	/* Skip last '"' */
 	l.advance()
 
 	return l.emmit(STRING_LITERAL, string(value), models.Span{Start: init_position, End: end_position}), nil
+}
+
+/* Parse number literal */
+func (l *Lexer) parse_number_literal() (Token, error) {
+	init_position := l.position
+
+	for {
+		ch, err := l.getch()
+
+		if err != nil || (!unicode.IsNumber(ch) && ch != '.') {
+			break
+		}
+
+		l.advance()
+	}
+
+	end_position := l.position
+
+	init_ch, err := l.at(init_position.Offset)
+	if err != nil {
+		return NULL_TOKEN, err
+	}
+
+	/* Number literals can't start with . */
+	if !unicode.IsNumber(init_ch) {
+		return NULL_TOKEN, ErrExpectedNumber
+	}
+
+	value := l.Src[init_position.Offset:end_position.Offset]
+	_, ok := MapToNumber(value)
+
+	if !ok {
+		return NULL_TOKEN, ErrExpectedNumber
+	}
+
+	return l.emmit(NUMBER_LITERAL, string(value), models.Span{Start: init_position, End: end_position}), nil
 }
 
 /* TODO: Parse char */
@@ -208,6 +258,12 @@ func (l *Lexer) Tokenize() ([]Token, error) {
 			tokens = append(tokens, token)
 		} else if unicode.IsLetter(ch) || ch == '_' {
 			token, err := l.parse_identifier()
+			if err != nil {
+				return nil, err
+			}
+			tokens = append(tokens, token)
+		} else if unicode.IsNumber(ch) {
+			token, err := l.parse_number_literal()
 			if err != nil {
 				return nil, err
 			}

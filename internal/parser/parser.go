@@ -12,14 +12,14 @@ func (pe ParserError) Error() string {
 }
 
 const (
-	ErrOutOfBounds = ParserError("index is out of bounds")
+	ErrOutOfBounds         = ParserError("index is out of bounds")
 	ErrUnrecognizedKeyword = ParserError("unrecognized keyword")
-	ErrNotImplemented = ParserError("not implemented")
-	ErrExpectedOperand = ParserError("expected operand")
+	ErrNotImplemented      = ParserError("not implemented")
+	ErrExpectedOperand     = ParserError("expected operand")
 )
 
 type ErrExpectedToken struct {
-	Got lexer.TokenType
+	Got      lexer.TokenType
 	Expected lexer.TokenType
 }
 
@@ -28,7 +28,7 @@ func (er ErrExpectedToken) Error() string {
 }
 
 type ErrExpectedKeyword struct {
-	Got lexer.Keyword
+	Got      lexer.Keyword
 	Expected lexer.Keyword
 }
 
@@ -37,7 +37,7 @@ func (er ErrExpectedKeyword) Error() string {
 }
 
 type Parser struct {
-	Tokens []lexer.Token
+	Tokens   []lexer.Token
 	position uint32
 }
 
@@ -69,7 +69,6 @@ func (p *Parser) eat_token(token_type lexer.TokenType) (string, error) {
 	}
 
 	p.position++
-	fmt.Printf("Ate token type: %s\n", token_type)
 
 	return token.Value, nil
 }
@@ -99,9 +98,17 @@ func (p *Parser) parse_primary() (Expr, error) {
 	}
 
 	switch token.Type {
-		case lexer.STRING_LITERAL:
-			val, _ := p.eat_token(lexer.STRING_LITERAL)
-			return &StringLiteral{Content: val}, nil
+	case lexer.STRING_LITERAL:
+		val, _ := p.eat_token(lexer.STRING_LITERAL)
+		return &StringLiteral{Content: val}, nil
+	case lexer.NUMBER_LITERAL:
+		val, _ := p.eat_token(lexer.NUMBER_LITERAL)
+		num, _ := lexer.MapToNumber([]rune(val))
+		return &NumberLiteral{Value: num}, nil
+	case lexer.BOOLEAN_LITERAL:
+		val, _ := p.eat_token(lexer.NUMBER_LITERAL)
+		vbool, _ := lexer.MapToBool([]rune(val))
+		return &BoolLiteral{Value: vbool}, nil
 	}
 
 	return nil, ErrExpectedOperand
@@ -192,5 +199,5 @@ func (p *Parser) parse_write() (Stmt, error) {
 		return nil, err
 	}
 
-	return &Write{ Print: expr }, nil
+	return &Write{Print: expr}, nil
 }

@@ -16,6 +16,7 @@ var (
 	filename string
 )
 
+/* TODO: Add .exe at the end for Windows */
 const (
 	PROGRAM_NAME = "Pseint Compiler"
 	VERSION = "Indev"
@@ -56,7 +57,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Program exited successfuly.")
+	dbg("Program exited successfuly")
 }
 
 func run() error {
@@ -133,6 +134,16 @@ func run() error {
 	cmd.Stdin = os.Stdin
 
 	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+
+	run := exec.Command(out_path)
+	run.Stderr = os.Stderr
+	run.Stdout = os.Stdout
+	run.Stdin = os.Stdin
+
+	err = run.Run()
 	if err != nil {
 		return err
 	}
