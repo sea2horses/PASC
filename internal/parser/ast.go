@@ -45,11 +45,12 @@ func (sl StringLiteral) String() string {
 
 type NumberLiteral struct {
 	NodeInfo
-	Value float64
+	Int  uint64
+	Frac uint64
 }
 
 func (nl NumberLiteral) String() string {
-	return fmt.Sprintf("%f", nl.Value)
+	return fmt.Sprintf("%d.%d", nl.Int, nl.Frac)
 }
 
 type BoolLiteral struct {
@@ -59,6 +60,15 @@ type BoolLiteral struct {
 
 func (bl BoolLiteral) String() string {
 	return fmt.Sprintf("%t", bl.Value)
+}
+
+type Variable struct {
+	NodeInfo
+	Name string
+}
+
+func (v Variable) String() string {
+	return v.Name
 }
 
 type Write struct {

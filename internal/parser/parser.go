@@ -104,11 +104,33 @@ func (p *Parser) parse_primary() (Expr, error) {
 	case lexer.NUMBER_LITERAL:
 		val, _ := p.eat_token(lexer.NUMBER_LITERAL)
 		num, _ := lexer.MapToNumber([]rune(val))
-		return &NumberLiteral{Value: num}, nil
+		var frac uint64 = 0
+
+		/* Parse decimal */
+		if tok, err := p.get(); err != nil && tok.Type == lexer.DOT {
+			p.eat_token(lexer.DOT)
+			val, _ := p.eat_token(lexer.NUMBER_LITERAL)
+			frac, _ = lexer.MapToNumber([]rune(val))
+		}
+		return &NumberLiteral{Int: num, Frac: frac}, nil
 	case lexer.BOOLEAN_LITERAL:
 		val, _ := p.eat_token(lexer.NUMBER_LITERAL)
 		vbool, _ := lexer.MapToBool([]rune(val))
 		return &BoolLiteral{Value: vbool}, nil
+	case lexer.IDENTIFIER:
+		val, _ := p.eat_token(lexer.IDENTIFIER)
+		return &Variable{Name: val}, nil
+	case lexer.L_PARENTHESES:
+		p.eat_token(lexer.L_PARENTHESES)
+		expr, err := p.parse_expression()
+		if err != nil {
+			return nil, err
+		}
+		_, err = p.eat_token(lexer.R_PARENTHESES)
+		if err != nil {
+			return nil, err
+		}
+		return expr, nil
 	}
 
 	return nil, ErrExpectedOperand
