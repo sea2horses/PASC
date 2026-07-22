@@ -12,11 +12,12 @@ func _() {
 	_ = x[FINALGORITMO-1]
 	_ = x[ESCRIBIR-2]
 	_ = x[LEER-3]
+	_ = x[MOD-4]
 }
 
-const _Keyword_name = "ALGORITMOFINALGORITMOESCRIBIRLEER"
+const _Keyword_name = "ALGORITMOFINALGORITMOESCRIBIRLEERMOD"
 
-var _Keyword_index = [...]uint8{0, 9, 21, 29, 33}
+var _Keyword_index = [...]uint8{0, 9, 21, 29, 33, 36}
 
 func (i Keyword) String() string {
 	idx := int(i) - 0

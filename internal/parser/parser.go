@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"pseint-compiled/internal/lexer"
+	"slices"
 )
 
 type ParserError string
@@ -16,6 +17,8 @@ const (
 	ErrUnrecognizedKeyword = ParserError("unrecognized keyword")
 	ErrNotImplemented      = ParserError("not implemented")
 	ErrExpectedOperand     = ParserError("expected operand")
+	ErrUnexpectedNode      = ParserError("unexpected node in expression")
+	ErrInvalidExpression   = ParserError("invalid expression")
 )
 
 type ErrExpectedToken struct {
@@ -136,8 +139,190 @@ func (p *Parser) parse_primary() (Expr, error) {
 	return nil, ErrExpectedOperand
 }
 
+func (p *Parser) parse_operator_type() OperatorType {
+	init_position := p.position
+	tok, err := p.get()
+	if err != nil {
+		return UNRECOGNIZED
+	}
+
+	switch tok.Type {
+	case lexer.PLUS:
+		p.eat_token(lexer.PLUS)
+		return ADD
+	case lexer.MINUS:
+		p.eat_token(lexer.MINUS)
+		return SUBTRACT
+	case lexer.ASTERISK:
+		p.eat_token(lexer.ASTERISK)
+		return MULTIPLY
+	case lexer.SLASH:
+		p.eat_token(lexer.SLASH)
+		return DIVIDE
+	case lexer.L_ANGLE:
+		p.eat_token(lexer.L_ANGLE)
+		if tok, err := p.get(); err != nil && tok.Type == lexer.EQUALS {
+			p.eat_token(lexer.EQUALS)
+			return LESSER_EQ
+		}
+		return LESSER
+	case lexer.R_ANGLE:
+		p.eat_token(lexer.R_ANGLE)
+		if tok, err := p.get(); err != nil && tok.Type == lexer.EQUALS {
+			p.eat_token(lexer.EQUALS)
+			return GREATER_EQ
+		}
+		return GREATER
+	case lexer.EQUALS:
+		p.eat_token(lexer.EQUALS)
+		if tok, err := p.get(); err != nil && tok.Type == lexer.EQUALS {
+			p.eat_token(lexer.EQUALS)
+			return EQUALS
+		}
+		/* Restart position */
+		p.position = init_position
+		return UNRECOGNIZED
+	case lexer.EX_MARK:
+		p.eat_token(lexer.EX_MARK)
+		if tok, err := p.get(); err != nil && tok.Type == lexer.EQUALS {
+			p.eat_token(lexer.EQUALS)
+			return NOT_EQUALS
+		}
+		return NOT
+	case lexer.KEYWORD:
+		_, err := p.eat_keyword(lexer.MOD)
+		if err != nil {
+			return UNRECOGNIZED
+		}
+		return MODULO
+	case lexer.AMPERSAND:
+		p.eat_token(lexer.AMPERSAND)
+		if tok, err := p.get(); err != nil && tok.Type == lexer.AMPERSAND {
+			p.eat_token(lexer.AMPERSAND)
+			return AND
+		}
+		/* Restart position */
+		p.position = init_position
+		return UNRECOGNIZED
+	case lexer.PIPE:
+		p.eat_token(lexer.PIPE)
+		if tok, err := p.get(); err != nil && tok.Type == lexer.PIPE {
+			p.eat_token(lexer.PIPE)
+			return OR
+		}
+		/* Restart position */
+		p.position = init_position
+		return UNRECOGNIZED
+	}
+	return UNRECOGNIZED
+}
+
+func (p *Parser) parse_operator() *Operator {
+	op_type := p.parse_operator_type()
+
+	if op_type == UNRECOGNIZED {
+		return nil
+	} else {
+		return &Operator{Type: op_type}
+	}
+}
+
+func (p *Parser) parse_operand() (Expr, error) {
+	// Try parsing a unary operator
+	op := p.parse_operator()
+	if op == nil {
+		return p.parse_operand()
+	} else {
+		rhs, err := p.parse_operand()
+		if err != nil {
+			return nil, err
+		}
+		return &UnaryOperation{Op: *op, Expr: rhs}, nil
+	}
+}
+
+func (p *Parser) read_infix_to_postfix() ([]Node, error) {
+	operator_stack := []Operator{}
+	postfix_stack := []Node{}
+
+	for {
+		/* Parse operand */
+		expr, err := p.parse_operand()
+		if err != nil {
+			return nil, err
+		}
+
+		/* Add it directly to the postfix stack */
+		postfix_stack = append(postfix_stack, expr)
+
+		/* Grab operator */
+		op := p.parse_operator()
+		/* If there are no more operators, break */
+		if op == nil {
+			break
+		}
+
+		/* Else, if the current operator is lesser or equal than the one on top, we pop the stack */
+		for len(operator_stack) > 0 &&
+			BinaryOperatorPrecedence(operator_stack[len(operator_stack)-1].Type) >= BinaryOperatorPrecedence(op.Type) {
+			/* Append top operator to postfix stack */
+			postfix_stack = append(postfix_stack, operator_stack[len(operator_stack)-1])
+			/* Chop last element */
+			operator_stack = operator_stack[0 : len(operator_stack)-1]
+		}
+	}
+
+	/* Unload the remaining operators */
+	for len(operator_stack) > 0 {
+		/* Append top operator to postfix stack */
+		postfix_stack = append(postfix_stack, operator_stack[len(operator_stack)-1])
+		/* Chop last element */
+		operator_stack = operator_stack[0 : len(operator_stack)-1]
+	}
+
+	return postfix_stack, nil
+}
+
+func (p *Parser) postfix_to_expression(chain []Node) (Expr, error) {
+	for {
+		swapped := false
+		/* Evaluate postfix */
+		for i := range len(chain) - 2 {
+			first, ok := chain[i].(Expr)
+			if !ok {
+				continue
+			}
+			second, ok := chain[i+1].(Expr)
+			if !ok {
+				continue
+			}
+			third, ok := chain[i+2].(Operator)
+			if !ok {
+				continue
+			}
+
+			swapped = true
+			/* Replace with new expression */
+			chain = slices.Delete(chain, i, i+3)
+			chain = slices.Insert(chain, i, Node(BinaryOperation{LHS: first, RHS: second, Op: third}))
+		}
+
+		if len(chain) == 1 {
+			return chain[0], nil
+		}
+
+		if !swapped {
+			return nil, ErrInvalidExpression
+		}
+	}
+}
+
 func (p *Parser) parse_expression() (Expr, error) {
-	return p.parse_primary()
+	postfix, err := p.read_infix_to_postfix()
+	if err != nil {
+		return nil, err
+	}
+	return p.postfix_to_expression(postfix)
 }
 
 func (p *Parser) parse_main_function() (*MainFunction, error) {

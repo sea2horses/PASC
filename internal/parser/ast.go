@@ -3,7 +3,6 @@ package parser
 import (
 	"fmt"
 	"pseint-compiled/internal/models"
-	"pseint-compiled/internal/semantic"
 	"strings"
 )
 
@@ -11,7 +10,7 @@ type NodeInfo struct {
 	span models.Span
 }
 
-func (ni *NodeInfo) Span() models.Span {
+func (ni NodeInfo) Span() models.Span {
 	return ni.span
 }
 
@@ -23,11 +22,6 @@ type Node interface {
 
 type Expr interface {
 	Node
-}
-
-type TypedExpr interface {
-	Node
-	Type() semantic.Type
 }
 
 type Stmt interface {
@@ -69,6 +63,36 @@ type Variable struct {
 
 func (v Variable) String() string {
 	return v.Name
+}
+
+type Operator struct {
+	NodeInfo
+	Type OperatorType
+}
+
+func (o Operator) String() string {
+	return o.Type.String()
+}
+
+type UnaryOperation struct {
+	NodeInfo
+	Op   Operator
+	Expr Expr
+}
+
+func (uo UnaryOperation) String() string {
+	return fmt.Sprintf("(%s %s)", uo.Op, uo.Expr)
+}
+
+type BinaryOperation struct {
+	NodeInfo
+	LHS Expr
+	Op  Operator
+	RHS Expr
+}
+
+func (bo BinaryOperation) String() string {
+	return fmt.Sprintf("(%s %s %s)", bo.LHS, bo.Op, bo.RHS)
 }
 
 type Write struct {

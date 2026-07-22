@@ -14,6 +14,9 @@ const (
 	ESCRIBIR
 	LEER
 
+	// Operators
+	MOD
+
 	// Flow Control
 )
 
@@ -27,4 +30,5 @@ var keywordMap map[string]Keyword = map[string]Keyword{
 	"finalgoritmo": FINALGORITMO,
 	"escribir":     ESCRIBIR,
 	"leer":         LEER,
+	"mod":          MOD,
 }

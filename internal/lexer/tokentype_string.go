@@ -13,12 +13,26 @@ func _() {
 	_ = x[STRING_LITERAL-2]
 	_ = x[NUMBER_LITERAL-3]
 	_ = x[BOOLEAN_LITERAL-4]
-	_ = x[EOF-5]
+	_ = x[DOT-5]
+	_ = x[COMMA-6]
+	_ = x[EQUALS-7]
+	_ = x[L_PARENTHESES-8]
+	_ = x[R_PARENTHESES-9]
+	_ = x[PLUS-10]
+	_ = x[MINUS-11]
+	_ = x[ASTERISK-12]
+	_ = x[SLASH-13]
+	_ = x[L_ANGLE-14]
+	_ = x[R_ANGLE-15]
+	_ = x[AMPERSAND-16]
+	_ = x[PIPE-17]
+	_ = x[EX_MARK-18]
+	_ = x[EOF-19]
 }
 
-const _TokenType_name = "KEYWORDIDENTIFIERSTRING_LITERALNUMBER_LITERALBOOLEAN_LITERALEOF"
+const _TokenType_name = "KEYWORDIDENTIFIERSTRING_LITERALNUMBER_LITERALBOOLEAN_LITERALDOTCOMMAEQUALSL_PARENTHESESR_PARENTHESESPLUSMINUSASTERISKSLASHL_ANGLER_ANGLEAMPERSANDPIPEEX_MARKEOF"
 
-var _TokenType_index = [...]uint8{0, 7, 17, 31, 45, 60, 63}
+var _TokenType_index = [...]uint8{0, 7, 17, 31, 45, 60, 63, 68, 74, 87, 100, 104, 109, 117, 122, 129, 136, 145, 149, 156, 159}
 
 func (i TokenType) String() string {
 	idx := int(i) - 0
