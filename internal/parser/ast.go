@@ -95,6 +95,16 @@ func (bo BinaryOperation) String() string {
 	return fmt.Sprintf("(%s %s %s)", bo.LHS, bo.Op, bo.RHS)
 }
 
+type Assignment struct {
+	NodeInfo
+	Target  Expr
+	Content Expr
+}
+
+func (a Assignment) String() string {
+	return fmt.Sprintf("%s = %s", a.Target, a.Content)
+}
+
 type Write struct {
 	NodeInfo
 	Print Expr
@@ -102,6 +112,24 @@ type Write struct {
 
 func (w Write) String() string {
 	return fmt.Sprintf("Write %s", w.Print)
+}
+
+type While struct {
+	NodeInfo
+	Condition Expr
+	Stmts     []Stmt
+}
+
+func (w While) String() string {
+	var builder strings.Builder
+
+	builder.WriteString(fmt.Sprintf("While '%s' {", w.Condition))
+	for _, stmt := range w.Stmts {
+		builder.WriteString(stmt.String())
+	}
+	builder.WriteString("}")
+
+	return builder.String()
 }
 
 type MainFunction struct {

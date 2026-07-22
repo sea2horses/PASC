@@ -56,6 +56,16 @@ func (p *Parser) at(position uint32) (*lexer.Token, error) {
 	return &p.Tokens[position], nil
 }
 
+/* TODO: When golang 1.27 is out, change this to a generic method */
+func parserTry[T any](p *Parser, fn func() (T, error)) (T, bool) {
+	init_position := p.position
+	val, err := fn()
+	if err != nil {
+		p.position = init_position
+	}
+	return val, err == nil
+}
+
 func (p *Parser) get() (*lexer.Token, error) {
 	return p.at(p.position)
 }
@@ -338,6 +348,20 @@ func (p *Parser) parse_main_function() (*MainFunction, error) {
 		return nil, err
 	}
 
+	stmts, err := p.parse_statement_block()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.eat_keyword(lexer.FINALGORITMO)
+	if err != nil {
+		return nil, err
+	}
+
+	return &MainFunction{Name: fn_name, Stmts: stmts}, nil
+}
+
+func (p *Parser) parse_statement_block() ([]Stmt, error) {
 	var stmts []Stmt
 	for {
 		stmt, err := p.parse_statement()
@@ -351,13 +375,7 @@ func (p *Parser) parse_main_function() (*MainFunction, error) {
 
 		stmts = append(stmts, stmt)
 	}
-
-	_, err = p.eat_keyword(lexer.FINALGORITMO)
-	if err != nil {
-		return nil, err
-	}
-
-	return &MainFunction{Name: fn_name, Stmts: stmts}, nil
+	return stmts, nil
 }
 
 func (p *Parser) parse_statement() (Stmt, error) {
@@ -370,8 +388,31 @@ func (p *Parser) parse_statement() (Stmt, error) {
 	case lexer.KEYWORD:
 		return p.parse_keyword()
 	default:
-		return nil, nil
+		{
+			assignment, ok := parserTry(p, p.parse_assignment)
+			if ok {
+				return assignment, nil
+			}
+
+			return nil, nil
+		}
 	}
+}
+
+func (p *Parser) parse_assignment() (Stmt, error) {
+	target, err := p.parse_expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.eat_token(lexer.EQUALS)
+	if err != nil {
+		return nil, err
+	}
+	content, err := p.parse_expression()
+	if err != nil {
+		return nil, err
+	}
+	return Assignment{Target: target, Content: content}, nil
 }
 
 func (p *Parser) parse_keyword() (Stmt, error) {
@@ -399,7 +440,10 @@ func (p *Parser) parse_keyword() (Stmt, error) {
 }
 
 func (p *Parser) parse_write() (Stmt, error) {
-	p.eat_keyword(lexer.ESCRIBIR)
+	_, err := p.eat_keyword(lexer.ESCRIBIR)
+	if err != nil {
+		return nil, err
+	}
 	/* Expression to be printed */
 	expr, err := p.parse_expression()
 	if err != nil {
@@ -407,4 +451,34 @@ func (p *Parser) parse_write() (Stmt, error) {
 	}
 
 	return &Write{Print: expr}, nil
+}
+
+func (p *Parser) parse_while() (Stmt, error) {
+	_, err := p.eat_keyword(lexer.MIENTRAS)
+	if err != nil {
+		return nil, err
+	}
+
+	condition, err := p.parse_expression()
+	if err != nil {
+		return nil, err
+	}
+
+	/* TODO: Make it a language option for optional 'Hacer' */
+	_, err = p.eat_keyword(lexer.HACER)
+	if err != nil {
+		return nil, err
+	}
+
+	stmts, err := p.parse_statement_block()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.eat_keyword(lexer.FINMIENTRAS)
+	if err != nil {
+		return nil, err
+	}
+
+	return While{Condition: condition, Stmts: stmts}, nil
 }

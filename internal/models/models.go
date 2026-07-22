@@ -15,7 +15,7 @@ type Span struct {
 func JoinSpans(spans ...Span) Span {
 	var lowest_position *Position = nil
 	var highest_position *Position = nil
-	
+
 	for _, span := range spans {
 		if lowest_position == nil || span.Start.Offset < lowest_position.Offset {
 			lowest_position = &span.Start
@@ -28,6 +28,6 @@ func JoinSpans(spans ...Span) Span {
 
 	return Span{
 		Start: *lowest_position,
-		End: *highest_position,
+		End:   *highest_position,
 	}
 }

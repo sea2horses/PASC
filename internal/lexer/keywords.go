@@ -18,6 +18,9 @@ const (
 	MOD
 
 	// Flow Control
+	MIENTRAS
+	HACER
+	FINMIENTRAS
 )
 
 func MapToKeyword(str []rune) (Keyword, bool) {
@@ -30,5 +33,8 @@ var keywordMap map[string]Keyword = map[string]Keyword{
 	"finalgoritmo": FINALGORITMO,
 	"escribir":     ESCRIBIR,
 	"leer":         LEER,
+	"mientras":     MIENTRAS,
+	"hacer":        HACER,
+	"finmientras":  FINMIENTRAS,
 	"mod":          MOD,
 }

@@ -44,3 +44,20 @@ type Token struct {
 	Value string      /* Value of the token */
 	Span  models.Span /* Span of the token */
 }
+
+var charMap map[rune]TokenType = map[rune]TokenType{
+	'.': DOT,
+	',': COMMA,
+	'=': EQUALS,
+	'(': L_PARENTHESES,
+	')': R_PARENTHESES,
+	'+': PLUS,
+	'-': MINUS,
+	'*': ASTERISK,
+	'/': SLASH,
+	'<': L_ANGLE,
+	'>': R_ANGLE,
+	'&': AMPERSAND,
+	'|': PIPE,
+	'!': EX_MARK,
+}

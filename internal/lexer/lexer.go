@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"fmt"
+	"pseint-compiled/internal/diagnostics"
 	"pseint-compiled/internal/models"
 	"unicode"
 )
@@ -41,8 +42,9 @@ const (
 
 /* Lexer struct */
 type Lexer struct {
-	Src      []rune /* Loaded source code */
-	position models.Position
+	Src         []rune /* Loaded source code */
+	diagnostics []diagnostics.Diagnostic
+	position    models.Position
 }
 
 /* Get character at current position */
@@ -88,6 +90,21 @@ func (l *Lexer) emmit(token_type TokenType, value string, span models.Span) Toke
 	}
 }
 
+/* Emmit a diagnostic */
+func (l *Lexer) report(span models.Span, level diagnostics.DiagnosticLevel, msg string) {
+	d := diagnostics.Diagnostic{
+		Span:  span,
+		Level: level,
+		Msg:   msg,
+	}
+
+	l.diagnostics = append(l.diagnostics, d)
+}
+
+func (l *Lexer) Diagnostics() []diagnostics.Diagnostic {
+	return l.diagnostics
+}
+
 /* Skip Whitespace */
 func (l *Lexer) skip_whitespace() {
 	for {
@@ -126,6 +143,12 @@ func (l *Lexer) parse_identifier() (Token, error) {
 
 	/* If first char is NOT an identifier friendly character, throw an error */
 	if !unicode.IsLetter(init_ch) && init_ch != '_' {
+		l.report(
+			models.Span{Start: init_position, End: init_position},
+			diagnostics.ERROR,
+			ErrExpectedIdentifier.Error(),
+		)
+
 		return NULL_TOKEN, ErrExpectedIdentifier
 	}
 
@@ -185,10 +208,22 @@ func (l *Lexer) parse_string_literal() (Token, error) {
 
 	/* Check that both ends of our string are good */
 	if init_ch != '"' {
+		l.report(
+			models.Span{Start: init_position, End: init_position},
+			diagnostics.ERROR,
+			ErrExpectedString.Error(),
+		)
+
 		return NULL_TOKEN, ErrExpectedString
 	}
 
 	if end_ch != '"' {
+		l.report(
+			models.Span{Start: init_position, End: init_position},
+			diagnostics.ERROR,
+			ErrUnterminatedString.Error(),
+		)
+
 		return NULL_TOKEN, ErrUnterminatedString
 	}
 
@@ -231,6 +266,12 @@ func (l *Lexer) parse_number_literal() (Token, error) {
 	_, ok := MapToNumber(value)
 
 	if !ok {
+		l.report(
+			models.Span{Start: init_position, End: end_position},
+			diagnostics.ERROR,
+			ErrExpectedNumber.Error(),
+		)
+
 		return NULL_TOKEN, ErrExpectedNumber
 	}
 
@@ -238,6 +279,29 @@ func (l *Lexer) parse_number_literal() (Token, error) {
 }
 
 /* TODO: Parse char */
+func (l *Lexer) parse_char() (Token, error) {
+	/* Get current char */
+	ch, err := l.getch()
+
+	if err != nil {
+		return NULL_TOKEN, err
+	}
+
+	l.advance()
+
+	tk_type, ok := charMap[ch]
+	if !ok {
+		l.report(
+			models.Span{Start: l.position, End: l.position},
+			diagnostics.ERROR,
+			ErrUnexpectedChar{Char: ch}.Error(),
+		)
+
+		return NULL_TOKEN, ErrUnexpectedChar{Char: ch}
+	}
+
+	return Token{Type: tk_type, Value: string(ch)}, nil
+}
 
 /* Tokenize function */
 func (l *Lexer) Tokenize() ([]Token, error) {
@@ -252,24 +316,24 @@ func (l *Lexer) Tokenize() ([]Token, error) {
 			l.skip_whitespace()
 		} else if ch == '"' {
 			token, err := l.parse_string_literal()
-			if err != nil {
-				return nil, err
+			if err == nil {
+				tokens = append(tokens, token)
 			}
-			tokens = append(tokens, token)
 		} else if unicode.IsLetter(ch) || ch == '_' {
 			token, err := l.parse_identifier()
-			if err != nil {
-				return nil, err
+			if err == nil {
+				tokens = append(tokens, token)
 			}
-			tokens = append(tokens, token)
 		} else if unicode.IsNumber(ch) {
 			token, err := l.parse_number_literal()
-			if err != nil {
-				return nil, err
+			if err == nil {
+				tokens = append(tokens, token)
 			}
-			tokens = append(tokens, token)
 		} else {
-			return nil, ErrUnexpectedChar{Char: ch}
+			token, err := l.parse_char()
+			if err == nil {
+				tokens = append(tokens, token)
+			}
 		}
 	}
 

@@ -6,22 +6,23 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"pseint-compiled/internal/diagnostics"
 	"pseint-compiled/internal/generator"
 	"pseint-compiled/internal/lexer"
 	"pseint-compiled/internal/parser"
 )
 
 var (
-	debug bool
+	debug    bool
 	filename string
 )
 
 /* TODO: Add .exe at the end for Windows */
 const (
 	PROGRAM_NAME = "Pseint Compiler"
-	VERSION = "Indev"
-	OUTPUT = "./build/"
-	CG_FILENAME = "out.go"
+	VERSION      = "Indev"
+	OUTPUT       = "./build/"
+	CG_FILENAME  = "out.go"
 )
 
 //go:embed runtime.go
@@ -64,7 +65,7 @@ func run() error {
 	flag.BoolVar(&debug, "debug", false, "Whether to print debug information about the compiler")
 	flag.StringVar(&filename, "file", "", "File to compile (*.psc)")
 
-	flag.Parse();
+	flag.Parse()
 
 	dbg(PROGRAM_NAME, VERSION)
 
@@ -83,6 +84,22 @@ func run() error {
 	lexer := lexer.Lexer{Src: []rune(string(bytes))}
 
 	tokens, err := lexer.Tokenize()
+	ds := lexer.Diagnostics()
+
+	for _, d := range ds {
+		fm, _ := diagnostics.FormatDiagnostic(filename, bytes, d)
+		fmt.Fprintln(os.Stderr, fm)
+	}
+
+	e, w, _ := diagnostics.Summary(ds)
+	if e > 0 || w > 0 {
+		fmt.Fprintf(os.Stderr, "(%d errors, %d warnings)\n", e, w)
+	}
+
+	if e > 0 {
+		return diagnostics.SummaryAsError(ds)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -93,7 +110,7 @@ func run() error {
 	}
 
 	dbg("AST Parsing...")
-	parser := parser.Parser{ Tokens: tokens }
+	parser := parser.Parser{Tokens: tokens}
 	ast, err := parser.Parse()
 	if err != nil {
 		return err
