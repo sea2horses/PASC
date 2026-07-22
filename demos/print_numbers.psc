@@ -3,7 +3,6 @@ Algoritmo ImprimirNumeros
 
 	Mientras x <= 100 Hacer
 		Escribir x
-		"Hola
 		x = x + 1
 	FinMientras
 FinAlgoritmo

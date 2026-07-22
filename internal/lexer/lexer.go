@@ -47,6 +47,17 @@ type Lexer struct {
 	position    models.Position
 }
 
+func NewLexer(src []rune) *Lexer {
+	return &Lexer{
+		Src:         src,
+		diagnostics: []diagnostics.Diagnostic{},
+		position: models.Position{
+			Line:   1,
+			Column: 1,
+		},
+	}
+}
+
 /* Get character at current position */
 func (l *Lexer) getch() (rune, error) {
 	return l.at(l.position.Offset)
@@ -203,8 +214,17 @@ func (l *Lexer) parse_string_literal() (Token, error) {
 	end_ch, err := l.at(end_position.Offset)
 
 	if err != nil {
-		return NULL_TOKEN, err
+		l.report(
+			models.Span{Start: init_position, End: init_position},
+			diagnostics.ERROR,
+			ErrUnterminatedString.Error(),
+		)
+
+		return NULL_TOKEN, ErrUnterminatedString
 	}
+
+	/* Skip last '"' */
+	l.advance()
 
 	/* Check that both ends of our string are good */
 	if init_ch != '"' {
@@ -228,10 +248,7 @@ func (l *Lexer) parse_string_literal() (Token, error) {
 	}
 
 	/* Emit string token */
-	value := l.Src[init_position.Offset+1 : end_position.Offset]
-
-	/* Skip last '"' */
-	l.advance()
+	value := l.Src[init_position.Offset+1 : end_position.Offset-1]
 
 	return l.emmit(STRING_LITERAL, string(value), models.Span{Start: init_position, End: end_position}), nil
 }

@@ -81,13 +81,17 @@ func run() error {
 
 	dbg("Tokenizing...")
 
-	lexer := lexer.Lexer{Src: []rune(string(bytes))}
+	src := []rune(string(bytes))
+	lexer := lexer.NewLexer(src)
 
 	tokens, err := lexer.Tokenize()
 	ds := lexer.Diagnostics()
 
-	for _, d := range ds {
-		fm, _ := diagnostics.FormatDiagnostic(filename, bytes, d)
+	for i, d := range ds {
+		fm, err := diagnostics.FormatDiagnostic(filename, bytes, d)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "<err #%d could not be shown (%s)>", i+1, err.Error())
+		}
 		fmt.Fprintln(os.Stderr, fm)
 	}
 
