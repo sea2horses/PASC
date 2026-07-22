@@ -5,4 +5,5 @@ Algoritmo ImprimirNumeros
 		Escribir x
 		x = x + 1
 	FinMientras
+	%$
 FinAlgoritmo

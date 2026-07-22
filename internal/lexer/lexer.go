@@ -304,12 +304,14 @@ func (l *Lexer) parse_char() (Token, error) {
 		return NULL_TOKEN, err
 	}
 
+	capture_position := l.position
+
 	l.advance()
 
 	tk_type, ok := charMap[ch]
 	if !ok {
 		l.report(
-			models.Span{Start: l.position, End: l.position},
+			models.Span{Start: capture_position, End: capture_position},
 			diagnostics.ERROR,
 			ErrUnexpectedChar{Char: ch}.Error(),
 		)
@@ -317,7 +319,7 @@ func (l *Lexer) parse_char() (Token, error) {
 		return NULL_TOKEN, ErrUnexpectedChar{Char: ch}
 	}
 
-	return Token{Type: tk_type, Value: string(ch)}, nil
+	return Token{Type: tk_type, Value: string(ch), Span: models.Span{Start: capture_position, End: capture_position}}, nil
 }
 
 /* Tokenize function */
