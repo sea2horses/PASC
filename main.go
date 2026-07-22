@@ -38,38 +38,24 @@ const (
 	ErrNoFilename = ProgramErrors("expected filename to compile with -file flag")
 )
 
-func dbg(a ...any) (int, error) {
-	if debug {
-		return fmt.Println(a...)
-	}
-	return 0, nil
-}
-
-func dbgfmt(format string, a ...any) (int, error) {
-	if debug {
-		return fmt.Printf(format, a...)
-	}
-	return 0, nil
-}
-
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	dbg("Program exited successfuly")
+	diagnostics.Dbg("Program exited successfuly")
 }
 
 func run() error {
-	flag.BoolVar(&debug, "debug", false, "Whether to print debug information about the compiler")
+	flag.BoolVar(&diagnostics.Debug, "debug", false, "Whether to print debug information about the compiler")
 	flag.StringVar(&filename, "file", "", "File to compile (*.psc)")
 
 	flag.Parse()
 
-	dbg(PROGRAM_NAME, VERSION)
+	diagnostics.Dbg(PROGRAM_NAME, VERSION)
 
-	dbg("Getting file source code...")
+	diagnostics.Dbg("Getting file source code...")
 	if filename == "" {
 		return ErrNoFilename
 	}
@@ -79,7 +65,7 @@ func run() error {
 		return err
 	}
 
-	dbg("Tokenizing...")
+	diagnostics.Dbg("Tokenizing...")
 
 	src := []rune(string(bytes))
 	lexer := lexer.NewLexer(src)
@@ -108,26 +94,41 @@ func run() error {
 		return err
 	}
 
-	dbg("Tokens:")
+	diagnostics.Dbg("Tokens:")
 	for i, token := range tokens {
-		dbgfmt("#%d: %+v\n", i, token)
+		diagnostics.Dbgfmt("#%d: %+v\n", i, token)
 	}
 
-	dbg("AST Parsing...")
+	diagnostics.Dbg("AST Parsing...")
 	parser := parser.Parser{Tokens: tokens}
 	ast, err := parser.Parse()
 	if err != nil {
+		tok, _ := parser.LastAt()
+		if tok != nil {
+			d := diagnostics.Diagnostic{
+				Span:  tok.Span,
+				Level: diagnostics.ERROR,
+				Msg:   err.Error(),
+			}
+
+			fm, err := diagnostics.FormatDiagnostic(filename, bytes, d)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "<err could not be shown (%s)>", err.Error())
+			}
+			fmt.Fprintln(os.Stderr, fm)
+		}
+
 		return err
 	}
-	dbg(ast.String())
+	diagnostics.Dbg(ast.String())
 
-	dbg("Generating code...")
+	diagnostics.Dbg("Generating code...")
 	codegen := generator.CodeGenerator{}
 
 	code_bytes := codegen.Generate(ast)
 	var data []byte = append(runtime, code_bytes...)
 
-	dbg("Generated data\n", string(data))
+	diagnostics.Dbg("Generated data\n", string(data))
 
 	// Code path
 	code_path := OUTPUT + CG_FILENAME

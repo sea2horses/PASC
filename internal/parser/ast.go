@@ -7,16 +7,16 @@ import (
 )
 
 type NodeInfo struct {
-	span models.Span
+	Span models.Span
 }
 
-func (ni NodeInfo) Span() models.Span {
-	return ni.span
+func (ni NodeInfo) NodeSpan() models.Span {
+	return ni.Span
 }
 
 /* Node implemented by every AST Node */
 type Node interface {
-	Span() models.Span
+	NodeSpan() models.Span
 	String() string
 }
 
@@ -123,9 +123,9 @@ type While struct {
 func (w While) String() string {
 	var builder strings.Builder
 
-	builder.WriteString(fmt.Sprintf("While '%s' {", w.Condition))
+	builder.WriteString(fmt.Sprintf("While '%s' {\n", w.Condition))
 	for _, stmt := range w.Stmts {
-		builder.WriteString(stmt.String())
+		builder.WriteString(stmt.String() + "\n")
 	}
 	builder.WriteString("}")
 
@@ -141,9 +141,9 @@ type MainFunction struct {
 func (mf MainFunction) String() string {
 	var builder strings.Builder
 
-	builder.WriteString(fmt.Sprintf("MainFunction '%s' {", mf.Name))
+	builder.WriteString(fmt.Sprintf("MainFunction '%s' {\n", mf.Name))
 	for _, stmt := range mf.Stmts {
-		builder.WriteString(stmt.String())
+		builder.WriteString(stmt.String() + "\n")
 	}
 	builder.WriteString("}")
 
