@@ -3,7 +3,7 @@ package generator
 import (
 	"bytes"
 	"fmt"
-	"pseint-compiled/internal/parser"
+	"pseint-compiled/internal/ast"
 )
 
 const (
@@ -11,11 +11,11 @@ const (
 )
 
 type CodeGenerator struct {
-	buffer bytes.Buffer
+	buffer  bytes.Buffer
 	padding uint8
 }
 
-func (cg *CodeGenerator) Generate(ast parser.Node) []byte {
+func (cg *CodeGenerator) Generate(ast ast.Node) []byte {
 	// Initialize a new empty buffer
 	cg.buffer = *bytes.NewBuffer([]byte{})
 	cg.write_node(ast, &cg.buffer)
@@ -29,20 +29,20 @@ func (cg *CodeGenerator) newline() {
 	cg.buffer.Write(bytes.Repeat([]byte{'\t'}, int(cg.padding)))
 }
 
-func (cg *CodeGenerator) write_node(node parser.Node, buffer *bytes.Buffer) {
-	// 
+func (cg *CodeGenerator) write_node(node ast.Node, buffer *bytes.Buffer) {
+	//
 	switch n := node.(type) {
-	case *parser.StringLiteral:
+	case *ast.StringLiteral:
 		buffer.WriteRune('"')
 		buffer.WriteString(n.Content)
 		buffer.WriteRune('"')
-	case *parser.Write:
+	case *ast.Write:
 		buffer.WriteString(RUNTIME_WRITE_FUNCTION)
 		buffer.WriteString("(")
 		cg.write_node(n.Print, buffer)
 		buffer.WriteString(")")
 		cg.newline()
-	case *parser.MainFunction:
+	case *ast.MainFunction:
 		fmt.Fprintf(buffer, "/* Nombre original de la función: '%s' */", n.Name)
 		cg.newline()
 		buffer.WriteString("func main() {")

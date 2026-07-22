@@ -2,8 +2,10 @@ package parser
 
 import (
 	"fmt"
+	"pseint-compiled/internal/ast"
 	"pseint-compiled/internal/diagnostics"
 	"pseint-compiled/internal/lexer"
+	"pseint-compiled/internal/operators"
 	"slices"
 )
 
@@ -44,7 +46,7 @@ type Parser struct {
 	position uint32
 }
 
-func (p *Parser) Parse() (Node, error) {
+func (p *Parser) Parse() (ast.Node, error) {
 	return p.parse_main_function()
 }
 
@@ -111,7 +113,7 @@ func (p *Parser) eat_keyword(expected lexer.Keyword) (*lexer.Keyword, error) {
 	return &keyword, nil
 }
 
-func (p *Parser) parse_primary() (Expr, error) {
+func (p *Parser) parse_primary() (ast.Expr, error) {
 	diagnostics.Dbg("Parsing primary!")
 	token, err := p.get()
 	if err != nil {
@@ -121,7 +123,7 @@ func (p *Parser) parse_primary() (Expr, error) {
 	switch token.Type {
 	case lexer.STRING_LITERAL:
 		val, _ := p.eat_token(lexer.STRING_LITERAL)
-		return &StringLiteral{Content: val}, nil
+		return &ast.StringLiteral{Content: val}, nil
 	case lexer.NUMBER_LITERAL:
 		val, _ := p.eat_token(lexer.NUMBER_LITERAL)
 		num, _ := lexer.MapToNumber([]rune(val))
@@ -136,14 +138,14 @@ func (p *Parser) parse_primary() (Expr, error) {
 			}
 			frac, _ = lexer.MapToNumber([]rune(val))
 		}
-		return &NumberLiteral{Int: num, Frac: frac}, nil
+		return &ast.NumberLiteral{Int: num, Frac: frac}, nil
 	case lexer.BOOLEAN_LITERAL:
 		val, _ := p.eat_token(lexer.NUMBER_LITERAL)
 		vbool, _ := lexer.MapToBool([]rune(val))
-		return &BoolLiteral{Value: vbool}, nil
+		return &ast.BoolLiteral{Value: vbool}, nil
 	case lexer.IDENTIFIER:
 		val, _ := p.eat_token(lexer.IDENTIFIER)
-		return &Variable{Name: val}, nil
+		return &ast.Variable{Name: val}, nil
 	case lexer.L_PARENTHESES:
 		p.eat_token(lexer.L_PARENTHESES)
 		expr, err := p.parse_expression()
@@ -160,101 +162,101 @@ func (p *Parser) parse_primary() (Expr, error) {
 	return nil, ErrExpectedOperand
 }
 
-func (p *Parser) parse_operator_type() OperatorType {
+func (p *Parser) parse_operator_type() operators.OperatorType {
 	init_position := p.position
 	tok, err := p.get()
 	if err != nil {
-		return UNRECOGNIZED
+		return operators.UNRECOGNIZED
 	}
 
 	switch tok.Type {
 	case lexer.PLUS:
 		p.eat_token(lexer.PLUS)
-		return ADD
+		return operators.ADD
 	case lexer.MINUS:
 		p.eat_token(lexer.MINUS)
-		return SUBTRACT
+		return operators.SUBTRACT
 	case lexer.ASTERISK:
 		p.eat_token(lexer.ASTERISK)
-		return MULTIPLY
+		return operators.MULTIPLY
 	case lexer.SLASH:
 		p.eat_token(lexer.SLASH)
-		return DIVIDE
+		return operators.DIVIDE
 	case lexer.L_ANGLE:
 		p.eat_token(lexer.L_ANGLE)
 
 		if tok, err := p.get(); err == nil && tok.Type == lexer.EQUALS {
 			p.eat_token(lexer.EQUALS)
-			return LESSER_EQ
+			return operators.LESSER_EQ
 		}
-		return LESSER
+		return operators.LESSER
 	case lexer.R_ANGLE:
 		p.eat_token(lexer.R_ANGLE)
 		if tok, err := p.get(); err == nil && tok.Type == lexer.EQUALS {
 			p.eat_token(lexer.EQUALS)
-			return GREATER_EQ
+			return operators.GREATER_EQ
 		}
-		return GREATER
+		return operators.GREATER
 	case lexer.EQUALS:
 		p.eat_token(lexer.EQUALS)
 		if tok, err := p.get(); err == nil && tok.Type == lexer.EQUALS {
 			p.eat_token(lexer.EQUALS)
-			return EQUALS
+			return operators.EQUALS
 		}
 		/* Restart position */
 		p.position = init_position
-		return UNRECOGNIZED
+		return operators.UNRECOGNIZED
 	case lexer.EX_MARK:
 		p.eat_token(lexer.EX_MARK)
 		if tok, err := p.get(); err == nil && tok.Type == lexer.EQUALS {
 			p.eat_token(lexer.EQUALS)
-			return NOT_EQUALS
+			return operators.NOT_EQUALS
 		}
-		return NOT
+		return operators.NOT
 	/* This is fucking up everything */
 	case lexer.KEYWORD:
 		_, err := p.eat_keyword(lexer.MOD)
 		if err != nil {
 			/* Restart position */
 			p.position = init_position
-			return UNRECOGNIZED
+			return operators.UNRECOGNIZED
 		}
-		return MODULO
+		return operators.MODULO
 	case lexer.AMPERSAND:
 		p.eat_token(lexer.AMPERSAND)
 		if tok, err := p.get(); err == nil && tok.Type == lexer.AMPERSAND {
 			p.eat_token(lexer.AMPERSAND)
-			return AND
+			return operators.AND
 		}
 		/* Restart position */
 		p.position = init_position
-		return UNRECOGNIZED
+		return operators.UNRECOGNIZED
 	case lexer.PIPE:
 		p.eat_token(lexer.PIPE)
 		if tok, err := p.get(); err == nil && tok.Type == lexer.PIPE {
 			p.eat_token(lexer.PIPE)
-			return OR
+			return operators.OR
 		}
 		/* Restart position */
 		p.position = init_position
-		return UNRECOGNIZED
+		return operators.UNRECOGNIZED
 	}
-	return UNRECOGNIZED
+	return operators.UNRECOGNIZED
 }
 
-func (p *Parser) parse_operator() *Operator {
+func (p *Parser) parse_operator() *ast.Operator {
 	diagnostics.Dbg("Parsing operator!")
 	op_type := p.parse_operator_type()
 	diagnostics.Dbg("Resolved Type: ", op_type)
 
-	if op_type == UNRECOGNIZED {
+	if op_type == operators.UNRECOGNIZED {
 		return nil
 	} else {
-		return &Operator{Type: op_type}
+		return &ast.Operator{Type: op_type}
 	}
 }
 
-func (p *Parser) parse_operand() (Expr, error) {
+func (p *Parser) parse_operand() (ast.Expr, error) {
 	diagnostics.Dbg("Parsing operand!")
 	// Try parsing a unary operator
 	op := p.parse_operator()
@@ -265,13 +267,13 @@ func (p *Parser) parse_operand() (Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &UnaryOperation{Op: *op, Expr: rhs}, nil
+		return &ast.UnaryOperation{Op: *op, Expr: rhs}, nil
 	}
 }
 
-func (p *Parser) read_infix_to_postfix() ([]Node, error) {
-	operator_stack := []Operator{}
-	postfix_stack := []Node{}
+func (p *Parser) read_infix_to_postfix() ([]ast.Node, error) {
+	operator_stack := []ast.Operator{}
+	postfix_stack := []ast.Node{}
 
 	for {
 		/* Parse operand */
@@ -292,10 +294,10 @@ func (p *Parser) read_infix_to_postfix() ([]Node, error) {
 
 		/* Else, if the current operator is lesser or equal than the one on top, we pop the stack */
 		for len(operator_stack) > 0 &&
-			BinaryOperatorPrecedence(operator_stack[len(operator_stack)-1].Type) >= BinaryOperatorPrecedence(op.Type) {
+			operators.BinaryOperatorPrecedence(operator_stack[len(operator_stack)-1].Type) >= operators.BinaryOperatorPrecedence(op.Type) {
 			/* Append top operator to postfix stack */
 			postfix_stack = append(postfix_stack, operator_stack[len(operator_stack)-1])
-			/* Chop last element */
+			/* Chop last. element */
 			operator_stack = operator_stack[0 : len(operator_stack)-1]
 		}
 
@@ -306,28 +308,28 @@ func (p *Parser) read_infix_to_postfix() ([]Node, error) {
 	for len(operator_stack) > 0 {
 		/* Append top operator to postfix stack */
 		postfix_stack = append(postfix_stack, operator_stack[len(operator_stack)-1])
-		/* Chop last element */
+		/* Chop last. element */
 		operator_stack = operator_stack[0 : len(operator_stack)-1]
 	}
 
 	return postfix_stack, nil
 }
 
-func (p *Parser) postfix_to_expression(chain []Node) (Expr, error) {
+func (p *Parser) postfix_to_expression(chain []ast.Node) (ast.Expr, error) {
 	for {
 		diagnostics.Dbg("Postfix Iteration, expr: ", chain)
 		swapped := false
 		/* Evaluate postfix */
 		for i := range len(chain) - 2 {
-			first, ok := chain[i].(Expr)
+			first, ok := chain[i].(ast.Expr)
 			if !ok {
 				continue
 			}
-			second, ok := chain[i+1].(Expr)
+			second, ok := chain[i+1].(ast.Expr)
 			if !ok {
 				continue
 			}
-			third, ok := chain[i+2].(Operator)
+			third, ok := chain[i+2].(ast.Operator)
 			if !ok {
 				continue
 			}
@@ -335,7 +337,7 @@ func (p *Parser) postfix_to_expression(chain []Node) (Expr, error) {
 			swapped = true
 			/* Replace with new expression */
 			chain = slices.Delete(chain, i, i+3)
-			chain = slices.Insert(chain, i, Node(BinaryOperation{LHS: first, RHS: second, Op: third}))
+			chain = slices.Insert(chain, i, ast.Node(ast.BinaryOperation{LHS: first, RHS: second, Op: third}))
 		}
 
 		if len(chain) == 1 {
@@ -349,7 +351,7 @@ func (p *Parser) postfix_to_expression(chain []Node) (Expr, error) {
 	}
 }
 
-func (p *Parser) parse_expression() (Expr, error) {
+func (p *Parser) parse_expression() (ast.Expr, error) {
 	diagnostics.Dbg("Parsing expression...")
 	tk, _ := p.get()
 	diagnostics.Dbgfmt("On token: %+v\n", tk)
@@ -360,7 +362,7 @@ func (p *Parser) parse_expression() (Expr, error) {
 	return p.postfix_to_expression(postfix)
 }
 
-func (p *Parser) parse_main_function() (*MainFunction, error) {
+func (p *Parser) parse_main_function() (*ast.MainFunction, error) {
 	diagnostics.Dbg("Parsing main functions...")
 	var err error
 	/* Set the proper structure */
@@ -384,14 +386,14 @@ func (p *Parser) parse_main_function() (*MainFunction, error) {
 		return nil, err
 	}
 
-	return &MainFunction{Name: fn_name, Stmts: stmts}, nil
+	return &ast.MainFunction{Name: fn_name, Stmts: stmts}, nil
 }
 
-func (p *Parser) parse_statement_block() ([]Stmt, error) {
+func (p *Parser) parse_statement_block() ([]ast.Stmt, error) {
 	diagnostics.Dbg("Parsing statement block...")
 	tk, _ := p.get()
 	diagnostics.Dbgfmt("On token: %+v\n", tk)
-	var stmts []Stmt
+	var stmts []ast.Stmt
 	for {
 		stmt, err := p.parse_statement()
 		if err != nil {
@@ -407,7 +409,7 @@ func (p *Parser) parse_statement_block() ([]Stmt, error) {
 	return stmts, nil
 }
 
-func (p *Parser) parse_statement() (Stmt, error) {
+func (p *Parser) parse_statement() (ast.Stmt, error) {
 	diagnostics.Dbg("Parsing statement...")
 	tk, _ := p.get()
 	diagnostics.Dbgfmt("On token: %+v\n", tk)
@@ -431,7 +433,7 @@ func (p *Parser) parse_statement() (Stmt, error) {
 	}
 }
 
-func (p *Parser) parse_assignment() (Stmt, error) {
+func (p *Parser) parse_assignment() (ast.Stmt, error) {
 	diagnostics.Dbg("Parsing assignment...")
 	tk, _ := p.get()
 	diagnostics.Dbgfmt("On token: %+v\n", tk)
@@ -447,10 +449,10 @@ func (p *Parser) parse_assignment() (Stmt, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Assignment{Target: target, Content: content}, nil
+	return ast.Assignment{Target: target, Content: content}, nil
 }
 
-func (p *Parser) parse_keyword() (Stmt, error) {
+func (p *Parser) parse_keyword() (ast.Stmt, error) {
 	diagnostics.Dbg("Parsing keyword...")
 	token, err := p.get()
 
@@ -477,7 +479,7 @@ func (p *Parser) parse_keyword() (Stmt, error) {
 	return nil, nil
 }
 
-func (p *Parser) parse_write() (Stmt, error) {
+func (p *Parser) parse_write() (ast.Stmt, error) {
 	diagnostics.Dbg("Parsing write...")
 	_, err := p.eat_keyword(lexer.ESCRIBIR)
 	if err != nil {
@@ -489,10 +491,10 @@ func (p *Parser) parse_write() (Stmt, error) {
 		return nil, err
 	}
 
-	return &Write{Print: expr}, nil
+	return &ast.Write{Print: expr}, nil
 }
 
-func (p *Parser) parse_while() (Stmt, error) {
+func (p *Parser) parse_while() (ast.Stmt, error) {
 	diagnostics.Dbg("Parsing while...")
 	_, err := p.eat_keyword(lexer.MIENTRAS)
 	if err != nil {
@@ -520,5 +522,5 @@ func (p *Parser) parse_while() (Stmt, error) {
 		return nil, err
 	}
 
-	return While{Condition: condition, Stmts: stmts}, nil
+	return ast.While{Condition: condition, Stmts: stmts}, nil
 }

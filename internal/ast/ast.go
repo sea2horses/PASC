@@ -1,8 +1,9 @@
-package parser
+package ast
 
 import (
 	"fmt"
 	"pseint-compiled/internal/models"
+	"pseint-compiled/internal/operators"
 	"strings"
 )
 
@@ -67,7 +68,7 @@ func (v Variable) String() string {
 
 type Operator struct {
 	NodeInfo
-	Type OperatorType
+	Type operators.OperatorType
 }
 
 func (o Operator) String() string {

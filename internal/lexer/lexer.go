@@ -322,6 +322,7 @@ func (l *Lexer) parse_char() (Token, error) {
 	return Token{Type: tk_type, Value: string(ch), Span: models.Span{Start: capture_position, End: capture_position}}, nil
 }
 
+/* TODO: Use newline to better and more intelligently report diagnostics */
 /* Tokenize function */
 func (l *Lexer) Tokenize() ([]Token, error) {
 	/* Make empty token list */
