@@ -18,6 +18,10 @@ const (
 	MOD
 
 	// Flow Control
+	SI
+	SINO
+	FINSI
+
 	MIENTRAS
 	HACER
 	FINMIENTRAS
@@ -37,4 +41,7 @@ var keywordMap map[string]Keyword = map[string]Keyword{
 	"hacer":        HACER,
 	"finmientras":  FINMIENTRAS,
 	"mod":          MOD,
+	"si":           SI,
+	"sino":         SINO,
+	"finsi":        FINSI,
 }

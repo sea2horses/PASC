@@ -167,7 +167,7 @@ func (p *Parser) parse_primary() (ast.Expr, error) {
 		var frac uint64 = 0
 
 		/* Parse decimal */
-		if tok, err := p.get(); err != nil && tok.Type == lexer.DOT {
+		if tok, err := p.get(); err == nil && tok.Type == lexer.DOT {
 			p.eat_token(lexer.DOT)
 			val, err := p.eat_token(lexer.NUMBER_LITERAL)
 			if err != nil {

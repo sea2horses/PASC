@@ -13,14 +13,17 @@ func _() {
 	_ = x[ESCRIBIR-2]
 	_ = x[LEER-3]
 	_ = x[MOD-4]
-	_ = x[MIENTRAS-5]
-	_ = x[HACER-6]
-	_ = x[FINMIENTRAS-7]
+	_ = x[SI-5]
+	_ = x[SINO-6]
+	_ = x[FINSI-7]
+	_ = x[MIENTRAS-8]
+	_ = x[HACER-9]
+	_ = x[FINMIENTRAS-10]
 }
 
-const _Keyword_name = "ALGORITMOFINALGORITMOESCRIBIRLEERMODMIENTRASHACERFINMIENTRAS"
+const _Keyword_name = "ALGORITMOFINALGORITMOESCRIBIRLEERMODSISINOFINSIMIENTRASHACERFINMIENTRAS"
 
-var _Keyword_index = [...]uint8{0, 9, 21, 29, 33, 36, 44, 49, 60}
+var _Keyword_index = [...]uint8{0, 9, 21, 29, 33, 36, 38, 42, 47, 55, 60, 71}
 
 func (i Keyword) String() string {
 	idx := int(i) - 0

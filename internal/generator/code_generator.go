@@ -78,7 +78,9 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 	case *tast.VariableExpr:
 		cg.write("%s", n.Symbol.Name)
 	case *tast.Cast:
-		cg.write("%s", conversionMap[*n.ConversionKind])
+		cg.write("%s(", conversionMap[*n.ConversionKind])
+		cg.write_node(n.Expr)
+		cg.write(")")
 	case *tast.Operator:
 		cg.write("%s", n.Op.String())
 	case *tast.UnaryOperation:
@@ -95,9 +97,9 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 	case *tast.Assignment:
 		cg.write_node(n.Target)
 		if n.Declarative {
-			cg.write(":=")
+			cg.write(" := ")
 		} else {
-			cg.write("=")
+			cg.write(" = ")
 		}
 		cg.write_node(n.Value)
 	case *tast.Write:

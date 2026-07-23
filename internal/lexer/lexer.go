@@ -260,7 +260,7 @@ func (l *Lexer) parse_number_literal() (Token, error) {
 	for {
 		ch, err := l.getch()
 
-		if err != nil || (!unicode.IsNumber(ch) && ch != '.') {
+		if err != nil || (!unicode.IsNumber(ch)) {
 			break
 		}
 
