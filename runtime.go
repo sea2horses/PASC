@@ -2,18 +2,20 @@ package main
 
 import (
 	"bufio"
+	"math"
 	"os"
 	"strconv"
 	"strings"
 )
 
 const (
-	ErrIncorrectType = "No coinciden los tipos"
+	ErrIncorrectType   = "No coinciden los tipos"
+	ErrNonWholeInteger = "No se puede declarar un decimal a un entero"
 )
 
 /* I/O */
-var writer bufio.Writer = *bufio.NewWriter(os.Stdout);
-var reader bufio.Reader = *bufio.NewReader(os.Stdin);
+var writer bufio.Writer = *bufio.NewWriter(os.Stdout)
+var reader bufio.Reader = *bufio.NewReader(os.Stdin)
 
 type Value interface {
 	int64 | float64 | string | bool
@@ -23,7 +25,20 @@ func RuntimeError(msg string) {
 	panic(msg)
 }
 
-func Write(values... any) {
+func ToIntegerExact(value float64) int64 {
+	const maxExclusive = 9223372036854775808.0
+	if math.IsNaN(value) || math.IsInf(value, 0) || math.Trunc(value) != value ||
+		value < float64(math.MinInt64) || value >= maxExclusive {
+		RuntimeError(ErrNonWholeInteger)
+	}
+	return int64(value)
+}
+
+func IntegerToFloat(value int64) float64 {
+	return float64(value)
+}
+
+func Write(values ...any) {
 	for _, value := range values {
 		switch val := value.(type) {
 		case int64:

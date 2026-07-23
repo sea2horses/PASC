@@ -362,6 +362,23 @@ func (p *Parser) parse_expression() (ast.Expr, error) {
 	return p.postfix_to_expression(postfix)
 }
 
+func (p *Parser) parse_expression_list() ([]ast.Expr, error) {
+	expr_list := []ast.Expr{}
+	for {
+		expr, err := p.parse_expression()
+		if err != nil {
+			return nil, err
+		}
+
+		expr_list = append(expr_list, expr)
+		if tok, err := p.get(); err == nil || tok.Type != lexer.COMMA {
+			break
+		}
+		p.eat_token(lexer.COMMA)
+	}
+	return expr_list, nil
+}
+
 func (p *Parser) parse_main_function() (*ast.MainFunction, error) {
 	diagnostics.Dbg("Parsing main functions...")
 	var err error
@@ -486,12 +503,12 @@ func (p *Parser) parse_write() (ast.Stmt, error) {
 		return nil, err
 	}
 	/* Expression to be printed */
-	expr, err := p.parse_expression()
+	print, err := p.parse_expression_list()
 	if err != nil {
 		return nil, err
 	}
 
-	return &ast.Write{Print: expr}, nil
+	return &ast.Write{Print: print}, nil
 }
 
 func (p *Parser) parse_while() (ast.Stmt, error) {

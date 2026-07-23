@@ -1,15 +1,49 @@
 package tast
 
-import "pseint-compiled/internal/semantic"
+import (
+	"fmt"
+	"pseint-compiled/internal/ast"
+	"pseint-compiled/internal/models"
+	"pseint-compiled/internal/operators"
+	"pseint-compiled/internal/semantic"
+)
+
+type Node interface {
+	Info() ast.NodeInfo
+	NodeSpan() models.Span
+}
 
 type Stmt interface{}
 
 type TypedExpr interface {
+	Node
 	exprNode()
 	Type() semantic.Type
 }
 
+type AssignmentOrigin struct {
+	Span    models.Span
+	Message string
+}
+
+type LValue interface {
+	lvalue()
+	AssignmentOrigin() *AssignmentOrigin
+	IsMutable() bool
+}
+
+type ErrorExpr struct {
+	ast.NodeInfo
+}
+
+func (ErrorExpr) exprNode() {}
+
+func (ErrorExpr) Type() semantic.Type {
+	return semantic.InvalidType
+}
+
 type StringLiteral struct {
+	ast.NodeInfo
 	Value string
 }
 
@@ -20,6 +54,7 @@ func (*StringLiteral) Type() semantic.Type {
 }
 
 type NumberLiteral struct {
+	ast.NodeInfo
 	Int  uint64
 	Frac uint64
 }
@@ -33,45 +68,104 @@ func (nl *NumberLiteral) Type() semantic.Type {
 }
 
 type BooleanLiteral struct {
+	ast.NodeInfo
 	Value bool
 }
 
-func (*BooleanLiteral) exprNode() {}
+func (BooleanLiteral) exprNode() {}
 
-func (*BooleanLiteral) Type() semantic.Type {
+func (BooleanLiteral) Type() semantic.Type {
 	return semantic.PrimitiveType{Kind: semantic.BOOLEAN}
 }
 
 type VariableExpr struct {
+	ast.NodeInfo
 	Symbol *semantic.Symbol
 }
 
-func (*VariableExpr) exprNode() {}
+func (VariableExpr) exprNode() {}
 
-func (v *VariableExpr) Type() semantic.Type {
+func (VariableExpr) lvalue() {}
+
+func (v VariableExpr) Type() semantic.Type {
 	return v.Symbol.Type
 }
 
+func (v VariableExpr) AssignmentOrigin() *AssignmentOrigin {
+	return &AssignmentOrigin{
+		Span:    v.Symbol.Declared,
+		Message: fmt.Sprintf("%q declared here with type %s", v.Symbol.Name, v.Symbol.Type),
+	}
+}
+
+func (v VariableExpr) IsMutable() bool {
+	return v.IsMutable()
+}
+
+type Operator struct {
+	ast.NodeInfo
+	Op operators.OperatorType
+}
+
+type UnaryOperation struct {
+	ast.NodeInfo
+	Op           Operator
+	Expr         TypedExpr
+	ResolvedType semantic.Type
+}
+
+func (UnaryOperation) exprNode() {}
+
+func (uo UnaryOperation) Type() semantic.Type {
+	return uo.ResolvedType
+}
+
+type BinaryOperation struct {
+	ast.NodeInfo
+	LHS          TypedExpr
+	Op           Operator
+	RHS          TypedExpr
+	ResolvedType semantic.Type
+}
+
+func (BinaryOperation) exprNode() {}
+
+func (uo BinaryOperation) Type() semantic.Type {
+	return uo.ResolvedType
+}
+
 type Assignment struct {
-	Target *semantic.Symbol
+	ast.NodeInfo
+	Target LValue
 	Value  TypedExpr
 }
 
 type Cast struct {
-	TargetType semantic.Type
-	Expr       TypedExpr
+	ast.NodeInfo
+	TargetType     semantic.Type
+	ConversionKind *semantic.ConversionKind
+	Expr           TypedExpr
 }
+
+func (*Cast) exprNode() {}
 
 func (c *Cast) Type() semantic.Type {
 	return c.TargetType
 }
 
 type While struct {
+	ast.NodeInfo
 	Condition TypedExpr
 	Stmts     []Stmt
 }
 
+type Write struct {
+	ast.NodeInfo
+	Content []TypedExpr
+}
+
 type MainFunction struct {
+	ast.NodeInfo
 	Name  string
 	Stmts []Stmt
 }

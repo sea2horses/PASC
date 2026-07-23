@@ -11,12 +11,17 @@ type NodeInfo struct {
 	Span models.Span
 }
 
+func (ni NodeInfo) Info() NodeInfo {
+	return ni
+}
+
 func (ni NodeInfo) NodeSpan() models.Span {
 	return ni.Span
 }
 
 /* Node implemented by every AST Node */
 type Node interface {
+	Info() NodeInfo
 	NodeSpan() models.Span
 	String() string
 }
@@ -108,7 +113,7 @@ func (a Assignment) String() string {
 
 type Write struct {
 	NodeInfo
-	Print Expr
+	Print []Expr
 }
 
 func (w Write) String() string {
