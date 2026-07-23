@@ -137,6 +137,12 @@ func (uo BinaryOperation) Type() semantic.Type {
 	return uo.ResolvedType
 }
 
+type Declaration struct {
+	ast.NodeInfo
+	Symbol *semantic.Symbol
+	Type   semantic.Type
+}
+
 type Assignment struct {
 	ast.NodeInfo
 	Declarative bool /* MUST be used if it's first use */

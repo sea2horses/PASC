@@ -23,6 +23,7 @@ const (
 	ErrExpectedOperand     = ParserError("expected operand")
 	ErrUnexpectedNode      = ParserError("unexpected node in expression")
 	ErrInvalidExpression   = ParserError("invalid expression")
+	ErrExpectedType        = ParserError("expected type")
 )
 
 type ErrExpectedToken struct {
@@ -42,11 +43,11 @@ func (er ErrExpectedKeyword) Error() string {
 	return fmt.Sprintf("expected keyword: %s", er.Expected)
 }
 
-type UnterminatedDirective struct {
+type ErrUnterminatedDirective struct {
 	Name string
 }
 
-func (ud UnterminatedDirective) Error() string {
+func (ud ErrUnterminatedDirective) Error() string {
 	return fmt.Sprintf("unterminated directive: %s", ud.Name)
 }
 
@@ -632,6 +633,8 @@ func (p *Parser) parse_keyword() (ast.Stmt, error) {
 	}
 
 	switch kw {
+	case lexer.DEFINIR:
+		return p.parse_declaration()
 	case lexer.ESCRIBIR:
 		return p.parse_write()
 	case lexer.LEER:
@@ -643,6 +646,62 @@ func (p *Parser) parse_keyword() (ast.Stmt, error) {
 	}
 
 	return nil, nil
+}
+
+func (p *Parser) parse_declaration() (ast.Stmt, error) {
+	start := p.mark()
+	/* GO */
+	_, err := p.eat_keyword(lexer.DEFINIR)
+	if err != nil {
+		return nil, err
+	}
+
+	/* Var name */
+	name, err := p.eat_token(lexer.IDENTIFIER)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.eat_keyword(lexer.COMO)
+	if err != nil {
+		return nil, err
+	}
+
+	typeref, err := p.parse_type()
+	if err != nil {
+		return nil, err
+	}
+
+	return &ast.Declaration{
+		NodeInfo: p.infoFrom(start),
+		Name:     name,
+		Type:     typeref,
+	}, nil
+}
+
+func (p *Parser) parse_type() (*ast.TypeRef, error) {
+	start := p.mark()
+
+	/* Check if it's a keyword or an identifier */
+	tok, err := p.get()
+	if err != nil {
+		return nil, err
+	}
+
+	if tok.Type == lexer.IDENTIFIER {
+		p.eat_token(lexer.IDENTIFIER)
+		return &ast.TypeRef{NodeInfo: p.infoFrom(start), Name: tok.Value}, nil
+	} else if tok.Type == lexer.KEYWORD {
+		kw, _ := lexer.MapToKeyword([]rune(tok.Value))
+		switch kw {
+		case lexer.CADENA, lexer.ENTERO, lexer.LOGICO, lexer.REAL:
+			p.eat_token(lexer.KEYWORD)
+			return &ast.TypeRef{NodeInfo: p.infoFrom(start), Name: tok.Value}, nil
+		}
+	}
+
+	p.report(tok.Span, string(ErrExpectedType))
+	return nil, ErrExpectedType
 }
 
 func (p *Parser) parse_write() (ast.Stmt, error) {

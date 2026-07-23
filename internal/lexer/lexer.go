@@ -248,7 +248,7 @@ func (l *Lexer) parse_string_literal() (Token, error) {
 	}
 
 	/* Emit string token */
-	value := l.Src[init_position.Offset+1 : end_position.Offset-1]
+	value := l.Src[init_position.Offset+1 : end_position.Offset]
 
 	return l.emmit(STRING_LITERAL, string(value), models.Span{Start: init_position, End: end_position}), nil
 }

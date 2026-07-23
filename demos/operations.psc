@@ -1,11 +1,9 @@
 Algoritmo Operaciones
-    x = 0
-    Escribir "Escribe tu edad"
-    Leer x
+    Definir x Como Entero
+    Definir z Como Entero
 
-    Si x >= 18 Entonces
-        Escribir "Eres mayor de edad"
-    SiNo
-        Escribir "Eres menor de edad"
-    FinSi
+    Escribir "Dame dos numeros"
+    Leer x, z
+
+    Escribir "La suma de los dos numeros es: ", (x + z)
 FinAlgoritmo

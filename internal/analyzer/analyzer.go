@@ -48,6 +48,14 @@ func (e ErrVariableDoesntExist) Error() string {
 	return fmt.Sprintf("Variable '%s' doesn't exist", e.Name)
 }
 
+type ErrSymbolAlreadyExists struct {
+	Name string
+}
+
+func (e ErrSymbolAlreadyExists) Error() string {
+	return fmt.Sprintf("'%s' already exists!", e.Name)
+}
+
 type ErrUnsupportedType struct {
 	Type semantic.Type
 }
@@ -78,6 +86,7 @@ const (
 
 type Analyzer struct {
 	scope       *semantic.Scope
+	type_table  *semantic.TypeTable
 	diagnostics []diagnostics.Diagnostic
 }
 
@@ -88,6 +97,7 @@ func New() *Analyzer {
 
 func (a *Analyzer) Analyze(program *ast.MainFunction) (*tast.MainFunction, []diagnostics.Diagnostic) {
 	a.scope = semantic.NewScope(nil)
+	a.type_table = semantic.NewTypeTable()
 	a.diagnostics = nil
 
 	a.scope.Declare(
@@ -171,9 +181,55 @@ func (a *Analyzer) analyze_statement(stmt ast.Stmt) []tast.Stmt {
 		return []tast.Stmt{a.analyze_while(s)}
 	case *ast.If:
 		return []tast.Stmt{a.analyze_if(s)}
+	case *ast.Declaration:
+		return []tast.Stmt{a.analyze_declaration(s)}
 	}
 
 	return nil
+}
+
+func (a *Analyzer) analyze_type_ref(typeref *ast.TypeRef) *semantic.Type {
+	return a.type_table.Get(typeref.Name)
+}
+
+func (a *Analyzer) analyze_declaration(decl *ast.Declaration) *tast.Declaration {
+	diagnostics.Dbg("Analyzing declaration")
+	/* Let's declare this bitch */
+	/* Check the type exists! */
+	t := a.analyze_type_ref(decl.Type)
+
+	ok := true
+	/* Let's add it to the symbol table */
+	if _, exists := a.scope.Lookup(decl.Name); exists {
+		a.report(decl.Span, "%s", ErrSymbolAlreadyExists{Name: decl.Name}.Error())
+		ok = false
+	}
+
+	if t == nil {
+		a.report(decl.Type.Span, "%s", "unknown type")
+		ok = false
+	}
+
+	if !ok {
+		return nil
+	}
+
+	/* Else, let's go */
+	symbol := &semantic.Symbol{
+		Name:     decl.Name,
+		Kind:     semantic.SymbolVariable,
+		Type:     *t,
+		Declared: decl.Span,
+		Mutable:  true,
+	}
+
+	a.scope.Declare(symbol)
+
+	return &tast.Declaration{
+		NodeInfo: decl.NodeInfo,
+		Symbol:   symbol,
+		Type:     *t,
+	}
 }
 
 /* TODO: 'strict' assignment rule where implicit assignment is forbidden */

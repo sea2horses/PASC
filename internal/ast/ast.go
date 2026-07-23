@@ -75,6 +75,15 @@ func (v Variable) String() string {
 	return v.Name
 }
 
+type TypeRef struct {
+	NodeInfo
+	Name string
+}
+
+func (t TypeRef) String() string {
+	return fmt.Sprintf("type<%s>", t.Name)
+}
+
 type Operator struct {
 	NodeInfo
 	Type operators.OperatorType
@@ -103,6 +112,16 @@ type BinaryOperation struct {
 
 func (bo BinaryOperation) String() string {
 	return fmt.Sprintf("(%s %s %s)", bo.LHS, bo.Op, bo.RHS)
+}
+
+type Declaration struct {
+	NodeInfo
+	Name string
+	Type *TypeRef
+}
+
+func (d Declaration) String() string {
+	return fmt.Sprintf("decl %s as %s", d.Name, d.Type)
 }
 
 type Assignment struct {

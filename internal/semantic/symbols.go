@@ -35,7 +35,7 @@ func NewScope(parent *Scope) *Scope {
 
 /* TODO: Add option to remove case insensitive assignment */
 func NormalizeName(name string) string {
-	return strings.ToUpper(name)
+	return strings.ToLower(name)
 }
 
 func (s *Scope) Parent() *Scope {
@@ -65,4 +65,29 @@ func (s *Scope) Lookup(name string) (*Symbol, bool) {
 	}
 
 	return nil, false
+}
+
+type TypeTable struct {
+	table map[string]Type
+}
+
+var default_table map[string]Type = map[string]Type{
+	"entero": IntegerType,
+	"cadena": StringType,
+	"logico": BooleanType,
+	"real":   RealType,
+}
+
+func NewTypeTable() *TypeTable {
+	return &TypeTable{
+		table: default_table,
+	}
+}
+
+func (s *TypeTable) Get(name string) *Type {
+	t, ok := s.table[NormalizeName(name)]
+	if !ok {
+		return nil
+	}
+	return &t
 }

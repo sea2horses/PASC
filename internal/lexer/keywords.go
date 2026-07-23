@@ -23,6 +23,14 @@ const (
 	SINO
 	FINSI
 
+	// Declaracion / Tipos
+	DEFINIR
+	COMO
+	ENTERO
+	CADENA
+	LOGICO
+	REAL
+
 	MIENTRAS
 	HACER
 	FINMIENTRAS
@@ -46,4 +54,10 @@ var keywordMap map[string]Keyword = map[string]Keyword{
 	"entonces":     ENTONCES,
 	"sino":         SINO,
 	"finsi":        FINSI,
+	"definir":      DEFINIR,
+	"como":         COMO,
+	"entero":       ENTERO,
+	"cadena":       CADENA,
+	"logico":       LOGICO,
+	"real":         REAL,
 }

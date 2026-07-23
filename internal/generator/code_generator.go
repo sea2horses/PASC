@@ -18,6 +18,13 @@ var conversionMap map[semantic.ConversionKind]string = map[semantic.ConversionKi
 	semantic.ConversionRealToIntegerExact: "ToIntegerExact",
 }
 
+var typeMap map[semantic.Type]string = map[semantic.Type]string{
+	semantic.IntegerType: "int64",
+	semantic.StringType:  "string",
+	semantic.BooleanType: "bool",
+	semantic.RealType:    "float64",
+}
+
 const (
 	WriteFn = "Write"
 	ReadFn  = "Read"
@@ -96,6 +103,9 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 		cg.write(" ")
 		cg.write_node(n.RHS)
 		cg.write(")")
+	case *tast.Declaration:
+		typerep, _ := typeMap[n.Symbol.Type]
+		cg.write("var %s %s", n.Symbol.Name, typerep)
 	case *tast.Assignment:
 		cg.write_node(n.Target)
 		if n.Declarative {
