@@ -8,6 +8,7 @@ import (
 	"pseint-compiled/internal/models"
 	"pseint-compiled/internal/operators"
 	"pseint-compiled/internal/semantic"
+	"reflect"
 	"slices"
 )
 
@@ -166,13 +167,18 @@ func (a *Analyzer) analyze_statement(stmt ast.Stmt) tast.Stmt {
 func (a *Analyzer) analyze_assignment(ass *ast.Assignment) *tast.Assignment {
 	diagnostics.Dbg("Analyzing assignment")
 	/* Check if LHS of assignment is a variable node only */
-	variable, ok := ass.Target.(ast.Variable)
+	variable, ok := ass.Target.(*ast.Variable)
 	typed_expr := a.analyze_expression(ass.Content)
 	nonvoid := a.assert_nonvoid(typed_expr)
 
+	diagnostics.Dbg("Target: ", ass.Target, reflect.TypeOf(ass.Target))
+
 	if !nonvoid {
+		diagnostics.Dbg("Void expression detected")
 		return nil
 	}
+
+	diagnostics.Dbg("Passing through...")
 	/* Let's check it out */
 	if ok {
 		diagnostics.Dbg("Direct variable assignment detected")
