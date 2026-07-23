@@ -192,6 +192,10 @@ type Else struct {
 	Stmts []Stmt
 }
 
+type ClearScreen struct {
+	ast.NodeInfo
+}
+
 type MainFunction struct {
 	ast.NodeInfo
 	Name  string

@@ -34,6 +34,10 @@ const (
 	MIENTRAS
 	HACER
 	FINMIENTRAS
+
+	// Extra
+	BORRAR
+	PANTALLA
 )
 
 func MapToKeyword(str []rune) (Keyword, bool) {
@@ -60,4 +64,6 @@ var keywordMap map[string]Keyword = map[string]Keyword{
 	"cadena":       CADENA,
 	"logico":       LOGICO,
 	"real":         REAL,
+	"borrar":       BORRAR,
+	"pantalla":     PANTALLA,
 }

@@ -643,6 +643,8 @@ func (p *Parser) parse_keyword() (ast.Stmt, error) {
 		return p.parse_if()
 	case lexer.MIENTRAS:
 		return p.parse_while()
+	case lexer.BORRAR:
+		return p.parse_clear_screen()
 	}
 
 	return nil, nil
@@ -827,4 +829,19 @@ func (p *Parser) parse_while() (ast.Stmt, error) {
 	}
 
 	return &ast.While{Condition: condition, Stmts: stmts, NodeInfo: p.infoFrom(start)}, nil
+}
+
+func (p *Parser) parse_clear_screen() (ast.Stmt, error) {
+	start := p.mark()
+	_, err := p.eat_keyword(lexer.BORRAR)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.eat_keyword(lexer.PANTALLA)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ast.ClearScreen{NodeInfo: p.infoFrom(start)}, nil
 }

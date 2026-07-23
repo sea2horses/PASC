@@ -28,6 +28,7 @@ var typeMap map[semantic.Type]string = map[semantic.Type]string{
 const (
 	WriteFn = "Write"
 	ReadFn  = "Read"
+	ClearFn = "ClearScreen"
 )
 
 type CodeGenerator struct {
@@ -146,9 +147,11 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 		cg.write("{")
 		cg.write_statement_block(n.Stmts)
 		cg.write("}")
+	case *tast.ClearScreen:
+		cg.write("%s()", ClearFn)
 	case *tast.MainFunction:
 		cg.write("/* Original Pseint Name: %s */\n", n.Name)
-		cg.write("func main() {")
+		cg.write("func main() {\n\tdefer writer.Flush()")
 		cg.write_statement_block(n.Stmts)
 		cg.write("}")
 	}

@@ -183,6 +183,8 @@ func (a *Analyzer) analyze_statement(stmt ast.Stmt) []tast.Stmt {
 		return []tast.Stmt{a.analyze_if(s)}
 	case *ast.Declaration:
 		return []tast.Stmt{a.analyze_declaration(s)}
+	case *ast.ClearScreen:
+		return []tast.Stmt{a.analyze_clear_screen(s)}
 	}
 
 	return nil
@@ -431,6 +433,10 @@ func (a *Analyzer) analyze_while(while *ast.While) *tast.While {
 		Condition: typed_condition,
 		Stmts:     stmts,
 	}
+}
+
+func (a *Analyzer) analyze_clear_screen(cls *ast.ClearScreen) *tast.ClearScreen {
+	return &tast.ClearScreen{NodeInfo: cls.NodeInfo}
 }
 
 func (a *Analyzer) analyze_expression(expr ast.Expr) tast.TypedExpr {

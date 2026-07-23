@@ -8,10 +8,15 @@ import (
 	"strings"
 )
 
+/* Errors */
 const (
 	ErrIncorrectType   = "No coinciden los tipos"
 	ErrNonWholeInteger = "No se puede declarar un decimal a un entero"
 )
+
+func RuntimeError(msg string) {
+	panic(msg)
+}
 
 /* I/O */
 var writer bufio.Writer = *bufio.NewWriter(os.Stdout)
@@ -19,23 +24,6 @@ var reader bufio.Reader = *bufio.NewReader(os.Stdin)
 
 type Value interface {
 	int64 | float64 | string | bool
-}
-
-func RuntimeError(msg string) {
-	panic(msg)
-}
-
-func ToIntegerExact(value float64) int64 {
-	const maxExclusive = 9223372036854775808.0
-	if math.IsNaN(value) || math.IsInf(value, 0) || math.Trunc(value) != value ||
-		value < float64(math.MinInt64) || value >= maxExclusive {
-		RuntimeError(ErrNonWholeInteger)
-	}
-	return int64(value)
-}
-
-func IntegerToFloat(value int64) float64 {
-	return float64(value)
 }
 
 func Write(values ...any) {
@@ -62,7 +50,6 @@ func Write(values ...any) {
 		}
 		writer.WriteRune('\n')
 	}
-	writer.Flush()
 }
 
 func Read[T Value](dest *T) {
@@ -120,4 +107,25 @@ func Read[T Value](dest *T) {
 			return false
 		}()
 	}
+}
+
+/* Implicit Casting */
+
+func ToIntegerExact(value float64) int64 {
+	const maxExclusive = 9223372036854775808.0
+	if math.IsNaN(value) || math.IsInf(value, 0) || math.Trunc(value) != value ||
+		value < float64(math.MinInt64) || value >= maxExclusive {
+		RuntimeError(ErrNonWholeInteger)
+	}
+	return int64(value)
+}
+
+func IntegerToFloat(value int64) float64 {
+	return float64(value)
+}
+
+/* Extra */
+
+func ClearScreen() {
+	writer.WriteString("\x1b[2J\x1b[H")
 }

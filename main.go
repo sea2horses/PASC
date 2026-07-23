@@ -30,7 +30,7 @@ const (
 )
 
 //go:embed runtime.go
-var runtime []byte
+var _runtime []byte
 
 type ProgramErrors string
 
@@ -156,7 +156,7 @@ func run() error {
 	codegen := generator.CodeGenerator{}
 
 	code_bytes := codegen.Generate(tast_tree)
-	var data []byte = append(runtime, code_bytes...)
+	var data []byte = append(_runtime, code_bytes...)
 
 	diagnostics.Dbg("Generated data\n", string(data))
 

@@ -215,6 +215,14 @@ type MainFunction struct {
 	Stmts []Stmt
 }
 
+type ClearScreen struct {
+	NodeInfo
+}
+
+func (cs ClearScreen) String() string {
+	return "clear screen"
+}
+
 func (mf MainFunction) String() string {
 	var builder strings.Builder
 
