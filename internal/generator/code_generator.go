@@ -21,7 +21,6 @@ var conversionMap map[semantic.ConversionKind]string = map[semantic.ConversionKi
 const (
 	WriteFn = "Write"
 	ReadFn  = "Read"
-	While   = "for"
 )
 
 type CodeGenerator struct {
@@ -86,12 +85,15 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 	case *tast.UnaryOperation:
 		cg.write("(")
 		cg.write_node(n.Op)
+		cg.write(" ")
 		cg.write_node(n.Expr)
 		cg.write(")")
 	case *tast.BinaryOperation:
 		cg.write("(")
 		cg.write_node(n.LHS)
+		cg.write(" ")
 		cg.write_node(n.Op)
+		cg.write(" ")
 		cg.write_node(n.RHS)
 		cg.write(")")
 	case *tast.Assignment:
@@ -111,8 +113,23 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 			cg.write_node(exp)
 		}
 		cg.write(")")
+	case *tast.Read:
+		cg.write("%s(&", ReadFn)
+		cg.write_node(n.Into)
+		cg.write(")")
+	case *tast.If:
+		cg.write("if ")
+		cg.write_node(n.Condition)
+		cg.write(" {")
+		cg.write_statement_block(n.Stmts)
+		cg.write("}")
+		if n.Else != nil {
+			cg.write(" else {")
+			cg.write_statement_block(n.Else.Stmts)
+			cg.write("}")
+		}
 	case *tast.While:
-		cg.write("%s", While)
+		cg.write("for ")
 		cg.write("(")
 		cg.write_node(n.Condition)
 		cg.write(")")

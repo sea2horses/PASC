@@ -19,6 +19,7 @@ const (
 
 	// Flow Control
 	SI
+	ENTONCES
 	SINO
 	FINSI
 
@@ -42,6 +43,7 @@ var keywordMap map[string]Keyword = map[string]Keyword{
 	"finmientras":  FINMIENTRAS,
 	"mod":          MOD,
 	"si":           SI,
+	"entonces":     ENTONCES,
 	"sino":         SINO,
 	"finsi":        FINSI,
 }

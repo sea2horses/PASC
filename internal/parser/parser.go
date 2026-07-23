@@ -42,17 +42,77 @@ func (er ErrExpectedKeyword) Error() string {
 	return fmt.Sprintf("expected keyword: %s", er.Expected)
 }
 
-type Parser struct {
-	Tokens   []lexer.Token
-	position uint32
+type UnterminatedDirective struct {
+	Name string
 }
 
-func (p *Parser) Parse() (ast.Node, error) {
-	return p.parse_main_function()
+func (ud UnterminatedDirective) Error() string {
+	return fmt.Sprintf("unterminated directive: %s", ud.Name)
+}
+
+type Parser struct {
+	Tokens      []lexer.Token
+	diagnostics []diagnostics.Diagnostic
+	position    uint32
+}
+
+func (p *Parser) Parse() (ast.Node, []diagnostics.Diagnostic) {
+	p.position = 0
+	p.diagnostics = nil
+
+	program, err := p.parse_main_function()
+	if err != nil {
+		p.report(p.currentSpan(), "%s", err)
+	}
+
+	return program, slices.Clone(p.diagnostics)
 }
 
 func (p *Parser) LastAt() (*lexer.Token, error) {
 	return p.get()
+}
+
+func (p *Parser) eof() bool {
+	return p.position >= uint32(len(p.Tokens))
+}
+
+func (p *Parser) currentSpan() models.Span {
+	if token, err := p.get(); err == nil {
+		return token.Span
+	}
+
+	if len(p.Tokens) == 0 {
+		return models.Span{}
+	}
+
+	last := p.Tokens[len(p.Tokens)-1].Span
+
+	// Empty span immediately after the final token.
+	return models.Span{
+		Start: last.End,
+		End:   last.End,
+	}
+}
+
+func (p *Parser) diagnosis(span models.Span, level diagnostics.DiagnosticLevel, format string, args ...any) {
+	diagnostics.Dbg("Filing diagnosis of type: ", level, ". span: ", span)
+	p.diagnostics = append(p.diagnostics, diagnostics.Diagnostic{
+		Span:  span,
+		Msg:   fmt.Sprintf(format, args...),
+		Level: level,
+	})
+}
+
+func (p *Parser) report(span models.Span, format string, args ...any) {
+	p.diagnosis(span, diagnostics.ERROR, format, args...)
+}
+
+func (p *Parser) warn(span models.Span, format string, args ...any) {
+	p.diagnosis(span, diagnostics.WARNING, format, args...)
+}
+
+func (p *Parser) info(span models.Span, format string, args ...any) {
+	p.diagnosis(span, diagnostics.INFO, format, args...)
 }
 
 func (p *Parser) at(position uint32) (*lexer.Token, error) {
@@ -109,6 +169,35 @@ func parserTry[T any](p *Parser, fn func() (T, error)) (T, bool) {
 
 func (p *Parser) get() (*lexer.Token, error) {
 	return p.at(p.position)
+}
+
+/* Skips to token, return true if token type was found */
+func (p *Parser) skip_to_token(token_type lexer.TokenType) bool {
+	token, err := p.get()
+
+	for err == nil {
+		if token.Type == token_type {
+			break
+		}
+		p.position++
+		token, err = p.get()
+	}
+
+	return err == nil
+}
+
+func (p *Parser) skip_to_keyword(keyword lexer.Keyword) bool {
+	token, err := p.get()
+
+	for err == nil {
+		if kw, ok := lexer.MapToKeyword([]rune(token.Value)); token.Type == lexer.KEYWORD && ok && kw == keyword {
+			break
+		}
+		p.skip_to_token(lexer.KEYWORD)
+		token, err = p.get()
+	}
+
+	return err == nil
 }
 
 func (p *Parser) eat_token(token_type lexer.TokenType) (string, error) {
@@ -423,7 +512,7 @@ func (p *Parser) parse_expression_list() ([]ast.Expr, error) {
 		}
 
 		expr_list = append(expr_list, expr)
-		if tok, err := p.get(); err == nil || tok.Type != lexer.COMMA {
+		if tok, err := p.get(); err != nil || tok.Type != lexer.COMMA {
 			break
 		}
 		p.eat_token(lexer.COMMA)
@@ -545,6 +634,10 @@ func (p *Parser) parse_keyword() (ast.Stmt, error) {
 	switch kw {
 	case lexer.ESCRIBIR:
 		return p.parse_write()
+	case lexer.LEER:
+		return p.parse_read()
+	case lexer.SI:
+		return p.parse_if()
 	case lexer.MIENTRAS:
 		return p.parse_while()
 	}
@@ -559,13 +652,90 @@ func (p *Parser) parse_write() (ast.Stmt, error) {
 	if err != nil {
 		return nil, err
 	}
-	/* Expression to be printed */
+	/* Expressions to be printed */
 	print, err := p.parse_expression_list()
 	if err != nil {
 		return nil, err
 	}
 
 	return &ast.Write{Print: print, NodeInfo: p.infoFrom(start)}, nil
+}
+
+func (p *Parser) parse_read() (ast.Stmt, error) {
+	diagnostics.Dbg("Parsing read...")
+	start := p.mark()
+	_, err := p.eat_keyword(lexer.LEER)
+	if err != nil {
+		return nil, err
+	}
+	/* Expressions to be read */
+	into, err := p.parse_expression_list()
+	if err != nil {
+		return nil, err
+	}
+
+	return &ast.Read{Into: into, NodeInfo: p.infoFrom(start)}, nil
+}
+
+func (p *Parser) parse_if() (ast.Stmt, error) {
+	diagnostics.Dbg("Parsing if...")
+	start := p.mark()
+	_, err := p.eat_keyword(lexer.SI)
+	if err != nil {
+		return nil, err
+	}
+
+	condition, err := p.parse_expression()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.eat_keyword(lexer.ENTONCES)
+	if err != nil {
+		return nil, err
+	}
+
+	/* Parse if statement block */
+	stmts, err := p.parse_statement_block()
+	if err != nil {
+		return nil, err
+	}
+
+	var else_branch *ast.Else = nil
+
+	/* Check for else branch */
+	if tok, err := p.get(); err == nil && tok.Type == lexer.KEYWORD {
+		if keyword, ok := lexer.MapToKeyword([]rune(tok.Value)); ok && keyword == lexer.SINO {
+			else_branch, err = p.parse_else()
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	_, err = p.eat_keyword(lexer.FINSI)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ast.If{Condition: condition, Stmts: stmts, Else: else_branch, NodeInfo: p.infoFrom(start)}, nil
+}
+
+func (p *Parser) parse_else() (*ast.Else, error) {
+	start := p.mark()
+
+	_, err := p.eat_keyword(lexer.SINO)
+	if err != nil {
+		return nil, err
+	}
+
+	/* Parse if statement block */
+	stmts, err := p.parse_statement_block()
+	if err != nil {
+		return nil, err
+	}
+
+	return &ast.Else{Stmts: stmts, NodeInfo: p.infoFrom(start)}, nil
 }
 
 func (p *Parser) parse_while() (ast.Stmt, error) {

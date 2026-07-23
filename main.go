@@ -104,24 +104,24 @@ func run() error {
 
 	diagnostics.Dbg("AST Parsing...")
 	parser := parser.Parser{Tokens: tokens}
-	ast_tree, err := parser.Parse()
-	if err != nil {
-		tok, _ := parser.LastAt()
-		if tok != nil {
-			d := diagnostics.Diagnostic{
-				Span:  tok.Span,
-				Level: diagnostics.ERROR,
-				Msg:   err.Error(),
-			}
+	ast_tree, ds := parser.Parse()
 
-			err := diagnostics.PrintFileDiagnostic(filename, d)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "<err could not be shown (%s)>", err.Error())
-			}
+	for i, d := range ds {
+		err := diagnostics.PrintFileDiagnostic(filename, d)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "<err #%d could not be shown (%s)>", i+1, err.Error())
 		}
-
-		return err
 	}
+
+	e, w, _ = diagnostics.Summary(ds)
+	if e > 0 || w > 0 {
+		fmt.Fprintf(os.Stderr, "(%d errors, %d warnings)\n", e, w)
+	}
+
+	if e > 0 {
+		return diagnostics.SummaryAsError(ds)
+	}
+
 	diagnostics.Dbg(ast_tree.String())
 
 	diagnostics.Dbg("Analyzing...")

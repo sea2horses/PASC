@@ -124,6 +124,54 @@ func (w Write) String() string {
 	return fmt.Sprintf("Write %s", w.Print)
 }
 
+type Read struct {
+	NodeInfo
+	Into []Expr
+}
+
+func (r Read) String() string {
+	return fmt.Sprintf("Read %s", r.Into)
+}
+
+type If struct {
+	NodeInfo
+	Condition Expr
+	Stmts     []Stmt
+	Else      *Else
+}
+
+func (i If) String() string {
+	var builder strings.Builder
+
+	builder.WriteString(fmt.Sprintf("If '%s' {\n", i.Condition))
+	for _, stmt := range i.Stmts {
+		builder.WriteString(stmt.String() + "\n")
+	}
+	builder.WriteString("} ")
+	if i.Else != nil {
+		builder.WriteString(i.Else.String())
+	}
+
+	return builder.String()
+}
+
+type Else struct {
+	NodeInfo
+	Stmts []Stmt
+}
+
+func (e Else) String() string {
+	var builder strings.Builder
+
+	builder.WriteString("Else {\n")
+	for _, stmt := range e.Stmts {
+		builder.WriteString(stmt.String() + "\n")
+	}
+	builder.WriteString("}")
+
+	return builder.String()
+}
+
 type While struct {
 	NodeInfo
 	Condition Expr

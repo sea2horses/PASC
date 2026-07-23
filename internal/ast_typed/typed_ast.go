@@ -168,6 +168,24 @@ type Write struct {
 	Content []TypedExpr
 }
 
+/* Although multiple semantically, in the TAST reads are treated as individual */
+type Read struct {
+	ast.NodeInfo
+	Into LValue
+}
+
+type If struct {
+	ast.NodeInfo
+	Condition TypedExpr
+	Stmts     []Stmt
+	Else      *Else
+}
+
+type Else struct {
+	ast.NodeInfo
+	Stmts []Stmt
+}
+
 type MainFunction struct {
 	ast.NodeInfo
 	Name  string

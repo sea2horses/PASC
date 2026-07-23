@@ -145,22 +145,32 @@ func (a *Analyzer) analyze_statement_block(stmts []ast.Stmt) []tast.Stmt {
 	for _, statement := range stmts {
 		typed := a.analyze_statement(statement)
 		if typed != nil {
-			statements = append(statements, typed)
+			statements = append(statements, typed...)
 		}
 	}
 	a.destroy_scope()
 	return statements
 }
 
-func (a *Analyzer) analyze_statement(stmt ast.Stmt) tast.Stmt {
+func (a *Analyzer) analyze_statement(stmt ast.Stmt) []tast.Stmt {
 	diagnostics.Dbg("Analyzing statement...")
 	switch s := stmt.(type) {
 	case *ast.Assignment:
-		return a.analyze_assignment(s)
+		return []tast.Stmt{a.analyze_assignment(s)}
 	case *ast.Write:
-		return a.analyze_write(s)
+		return []tast.Stmt{a.analyze_write(s)}
+	case *ast.Read:
+		reads := a.analyze_read(s)
+		statements := make([]tast.Stmt, 0, len(reads))
+
+		for _, read := range reads {
+			statements = append(statements, read)
+		}
+		return statements
 	case *ast.While:
-		return a.analyze_while(s)
+		return []tast.Stmt{a.analyze_while(s)}
+	case *ast.If:
+		return []tast.Stmt{a.analyze_if(s)}
 	}
 
 	return nil
@@ -278,6 +288,77 @@ func (a *Analyzer) analyze_write(write *ast.Write) *tast.Write {
 	return &tast.Write{NodeInfo: write.NodeInfo, Content: content}
 }
 
+func (a *Analyzer) analyze_read(read *ast.Read) []*tast.Read {
+	diagnostics.Dbg("analyzing read")
+	reads := []*tast.Read{}
+	ok := true
+
+	for _, exp := range read.Into {
+		/* Check each expression */
+		typed := a.analyze_expression(exp)
+
+		if semantic.IsInvalid(typed.Type()) {
+			ok = false
+			continue
+		}
+
+		/* Assert it to lvalue */
+		lvalue, good /* Im running out of names */ := typed.(tast.LValue)
+		if !good {
+			a.report(typed.NodeSpan(), ErrLValueError)
+			ok = false
+			continue
+		}
+
+		/* Check that it is mutable */
+		if !lvalue.IsMutable() {
+			a.report(typed.NodeSpan(), ErrImmutable)
+			a.info(lvalue.AssignmentOrigin().Span, "%s", lvalue.AssignmentOrigin().Message)
+			continue
+		}
+
+		/* All checks pass, add it */
+		reads = append(reads, &tast.Read{NodeInfo: read.NodeInfo, Into: lvalue})
+	}
+
+	if !ok {
+		return nil
+	}
+
+	return reads
+}
+
+func (a *Analyzer) analyze_if(i *ast.If) *tast.If {
+	diagnostics.Dbg("Analyzing if...")
+	/* Turn the expression into a typed expression */
+	typed_condition := a.analyze_expression(i.Condition)
+	stmts := a.analyze_statement_block(i.Stmts)
+	/* Assert the condition type to be boolean */
+	ok := a.assert_type(semantic.BooleanType, typed_condition)
+	if !ok {
+		return nil
+	}
+
+	var else_branch *tast.Else = nil
+
+	if i.Else != nil {
+		else_branch = a.analyze_else(i.Else)
+	}
+
+	return &tast.If{
+		NodeInfo:  i.NodeInfo,
+		Condition: typed_condition,
+		Stmts:     stmts,
+		Else:      else_branch,
+	}
+}
+
+func (a *Analyzer) analyze_else(e *ast.Else) *tast.Else {
+	diagnostics.Dbg("Analyzing else...")
+	stmts := a.analyze_statement_block(e.Stmts)
+	return &tast.Else{NodeInfo: e.NodeInfo, Stmts: stmts}
+}
+
 func (a *Analyzer) analyze_while(while *ast.While) *tast.While {
 	diagnostics.Dbg("Analyzing while...")
 	/* Analyze the condition */
@@ -318,12 +399,8 @@ func (a *Analyzer) analyze_expression(expr ast.Expr) tast.TypedExpr {
 	case *ast.Variable:
 		v := a.analyze_variable(node)
 		return v
-	case ast.UnaryOperation:
-		return a.analyze_unary_operation(&node)
 	case *ast.UnaryOperation:
 		return a.analyze_unary_operation(node)
-	case ast.BinaryOperation:
-		return a.analyze_binary_operation(&node)
 	case *ast.BinaryOperation:
 		return a.analyze_binary_operation(node)
 	}
@@ -415,7 +492,7 @@ func (a *Analyzer) analyze_unary_operation(uo *ast.UnaryOperation) tast.TypedExp
 	}
 }
 
-func (a *Analyzer) analyze_variable(variable *ast.Variable) *tast.VariableExpr {
+func (a *Analyzer) analyze_variable(variable *ast.Variable) tast.TypedExpr {
 	diagnostics.Dbg("Analyzing variable: ", variable.Name)
 	/* Get variable symbol */
 	symbol, ok := a.scope.Lookup(variable.Name)
@@ -423,7 +500,7 @@ func (a *Analyzer) analyze_variable(variable *ast.Variable) *tast.VariableExpr {
 	if !ok || symbol == nil {
 		diagnostics.Dbg("Not found!")
 		a.report(variable.NodeSpan(), "%s", ErrVariableDoesntExist{Name: variable.Name}.Error())
-		return nil
+		return &tast.ErrorExpr{NodeInfo: variable.NodeInfo}
 	}
 
 	diagnostics.Dbg("Found! Symbol: ", symbol)
