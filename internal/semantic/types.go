@@ -31,6 +31,8 @@ func (t PrimitiveType) String() string {
 		return "string"
 	case BOOLEAN:
 		return "boolean"
+	case VOID:
+		return "void"
 	default:
 		return "<invalid>"
 	}

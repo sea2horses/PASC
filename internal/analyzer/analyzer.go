@@ -92,10 +92,11 @@ func (a *Analyzer) Analyze(program *ast.MainFunction) (*tast.MainFunction, []dia
 
 	a.scope.Declare(
 		&semantic.Symbol{
-			Name:    program.Name,
-			Kind:    semantic.SymbolFunction,
-			Type:    semantic.VoidType,
-			Mutable: false,
+			Name:     program.Name,
+			Kind:     semantic.SymbolFunction,
+			Type:     semantic.VoidType,
+			Mutable:  false,
+			Declared: program.Span,
 		},
 	)
 
@@ -109,6 +110,7 @@ func (a *Analyzer) Analyze(program *ast.MainFunction) (*tast.MainFunction, []dia
 }
 
 func (a *Analyzer) diagnosis(span models.Span, level diagnostics.DiagnosticLevel, format string, args ...any) {
+	diagnostics.Dbg("Filing diagnosis of type: ", level, ". span: ", span)
 	a.diagnostics = append(a.diagnostics, diagnostics.Diagnostic{
 		Span:  span,
 		Msg:   fmt.Sprintf(format, args...),
@@ -151,13 +153,14 @@ func (a *Analyzer) analyze_statement_block(stmts []ast.Stmt) []tast.Stmt {
 }
 
 func (a *Analyzer) analyze_statement(stmt ast.Stmt) tast.Stmt {
+	diagnostics.Dbg("Analyzing statement...")
 	switch s := stmt.(type) {
-	case ast.Assignment:
-		return a.analyze_assignment(&s)
-	case ast.Write:
-		return a.analyze_write(&s)
-	case ast.While:
-		return a.analyze_while(&s)
+	case *ast.Assignment:
+		return a.analyze_assignment(s)
+	case *ast.Write:
+		return a.analyze_write(s)
+	case *ast.While:
+		return a.analyze_while(s)
 	}
 
 	return nil
@@ -197,6 +200,7 @@ func (a *Analyzer) analyze_assignment(ass *ast.Assignment) *tast.Assignment {
 		}
 	}
 	target := a.analyze_expression(ass.Target)
+	diagnostics.Dbg("Target <typed>: ", target, reflect.TypeOf(target))
 
 	lvalue, ok := target.(tast.LValue)
 	if !ok {
@@ -207,13 +211,15 @@ func (a *Analyzer) analyze_assignment(ass *ast.Assignment) *tast.Assignment {
 	if !lvalue.IsMutable() {
 		a.report(ass.NodeSpan(), ErrImmutable)
 		a.info(lvalue.AssignmentOrigin().Span, "%s", lvalue.AssignmentOrigin().Message)
+		return nil
 	}
 
 	/* Check coherence between target type and content type */
 	if !semantic.EqualTypes(typed_expr.Type(), target.Type()) {
+		var og_type semantic.Type = typed_expr.Type()
 		typed_expr, ok = tryConvert(typed_expr, target.Type())
 		if !ok {
-			a.report(ass.NodeSpan(), "%s", ErrIncorrectType{Expected: target.Type(), Got: typed_expr.Type()}.Error())
+			a.report(ass.NodeSpan(), "%s", ErrIncorrectType{Expected: target.Type(), Got: og_type}.Error())
 			a.info(lvalue.AssignmentOrigin().Span, "%s", lvalue.AssignmentOrigin().Message)
 			return nil
 		}
@@ -234,6 +240,7 @@ var allowed_write_types []semantic.Type = []semantic.Type{
 }
 
 func (a *Analyzer) analyze_write(write *ast.Write) *tast.Write {
+	diagnostics.Dbg("Analyzing write...")
 	content := []tast.TypedExpr{}
 	ok := true
 
@@ -268,6 +275,7 @@ func (a *Analyzer) analyze_write(write *ast.Write) *tast.Write {
 }
 
 func (a *Analyzer) analyze_while(while *ast.While) *tast.While {
+	diagnostics.Dbg("Analyzing while...")
 	/* Analyze the condition */
 	typed_condition := a.analyze_expression(while.Condition)
 	stmts := a.analyze_statement_block(while.Stmts)
@@ -288,36 +296,32 @@ func (a *Analyzer) analyze_expression(expr ast.Expr) tast.TypedExpr {
 	diagnostics.Dbg("Analyzing expression")
 	switch node := expr.(type) {
 	case *ast.NumberLiteral:
-		diagnostics.Dbg("Resolved type: ", semantic.RealType)
 		return &tast.NumberLiteral{
 			NodeInfo: node.NodeInfo,
 			Int:      node.Int,
 			Frac:     node.Frac,
 		}
 	case *ast.StringLiteral:
-		diagnostics.Dbg("Resolved type: ", semantic.StringType)
 		return &tast.StringLiteral{
 			NodeInfo: node.NodeInfo,
 			Value:    node.Content,
 		}
 	case *ast.BoolLiteral:
-		diagnostics.Dbg("Resolved type: ", semantic.BooleanType)
 		return &tast.BooleanLiteral{
 			NodeInfo: node.NodeInfo,
 			Value:    node.Value,
 		}
 	case *ast.Variable:
 		v := a.analyze_variable(node)
-		diagnostics.Dbg("Resolved type: ", v.Type())
 		return v
+	case ast.UnaryOperation:
+		return a.analyze_unary_operation(&node)
 	case *ast.UnaryOperation:
-		u := a.analyze_unary_operation(node)
-		diagnostics.Dbg("Resolved type: ", u.Type())
-		return u
+		return a.analyze_unary_operation(node)
+	case ast.BinaryOperation:
+		return a.analyze_binary_operation(&node)
 	case *ast.BinaryOperation:
-		b := a.analyze_binary_operation(node)
-		diagnostics.Dbg("Resolved type: ", b.Type())
-		return b
+		return a.analyze_binary_operation(node)
 	}
 
 	diagnostics.Dbg("Could not find the expression type")
@@ -418,7 +422,7 @@ func (a *Analyzer) analyze_variable(variable *ast.Variable) *tast.VariableExpr {
 		return nil
 	}
 
-	diagnostics.Dbg("Found!")
+	diagnostics.Dbg("Found! Symbol: ", symbol)
 	return &tast.VariableExpr{
 		NodeInfo: variable.NodeInfo,
 		Symbol:   symbol,

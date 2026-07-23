@@ -148,9 +148,9 @@ type Cast struct {
 	Expr           TypedExpr
 }
 
-func (*Cast) exprNode() {}
+func (Cast) exprNode() {}
 
-func (c *Cast) Type() semantic.Type {
+func (c Cast) Type() semantic.Type {
 	return c.TargetType
 }
 

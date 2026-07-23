@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/fatih/color"
 )
 
 const (
@@ -148,6 +150,17 @@ func PrintFileDiagnostic(
 	if err != nil {
 		return fmt.Errorf("format diagnostic: %w", err)
 	}
+
+	// Set color
+	switch diagnostic.Level {
+	case ERROR:
+		color.Set(color.FgRed)
+	case WARNING:
+		color.Set(color.FgYellow)
+	case INFO:
+		color.Set(color.FgHiBlue)
+	}
+	defer color.Unset()
 
 	_, err = io.WriteString(os.Stderr, f)
 	if err != nil {

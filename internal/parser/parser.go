@@ -5,6 +5,7 @@ import (
 	"pseint-compiled/internal/ast"
 	"pseint-compiled/internal/diagnostics"
 	"pseint-compiled/internal/lexer"
+	"pseint-compiled/internal/models"
 	"pseint-compiled/internal/operators"
 	"slices"
 )
@@ -60,6 +61,40 @@ func (p *Parser) at(position uint32) (*lexer.Token, error) {
 	}
 
 	return &p.Tokens[position], nil
+}
+
+func (p *Parser) mark() uint32 {
+	return p.position
+}
+
+func (p *Parser) spanFrom(start uint32) models.Span {
+	// No tokens consumed.
+	if start >= p.position {
+		return models.Span{}
+	}
+
+	if start >= uint32(len(p.Tokens)) {
+		return models.Span{}
+	}
+
+	endIndex := p.position - 1
+	if endIndex >= uint32(len(p.Tokens)) {
+		endIndex = uint32(len(p.Tokens)) - 1
+	}
+
+	first := p.Tokens[start].Span
+	last := p.Tokens[endIndex].Span
+
+	return models.Span{
+		Start: first.Start,
+		End:   last.End,
+	}
+}
+
+func (p *Parser) infoFrom(start uint32) ast.NodeInfo {
+	return ast.NodeInfo{
+		Span: p.spanFrom(start),
+	}
 }
 
 /* TODO: When golang 1.27 is out, change this to a generic method */
@@ -120,10 +155,12 @@ func (p *Parser) parse_primary() (ast.Expr, error) {
 		return nil, err
 	}
 
+	start := p.mark()
+
 	switch token.Type {
 	case lexer.STRING_LITERAL:
 		val, _ := p.eat_token(lexer.STRING_LITERAL)
-		return &ast.StringLiteral{Content: val}, nil
+		return &ast.StringLiteral{Content: val, NodeInfo: p.infoFrom(start)}, nil
 	case lexer.NUMBER_LITERAL:
 		val, _ := p.eat_token(lexer.NUMBER_LITERAL)
 		num, _ := lexer.MapToNumber([]rune(val))
@@ -138,14 +175,14 @@ func (p *Parser) parse_primary() (ast.Expr, error) {
 			}
 			frac, _ = lexer.MapToNumber([]rune(val))
 		}
-		return &ast.NumberLiteral{Int: num, Frac: frac}, nil
+		return &ast.NumberLiteral{Int: num, Frac: frac, NodeInfo: p.infoFrom(start)}, nil
 	case lexer.BOOLEAN_LITERAL:
 		val, _ := p.eat_token(lexer.NUMBER_LITERAL)
 		vbool, _ := lexer.MapToBool([]rune(val))
-		return &ast.BoolLiteral{Value: vbool}, nil
+		return &ast.BoolLiteral{Value: vbool, NodeInfo: p.infoFrom(start)}, nil
 	case lexer.IDENTIFIER:
 		val, _ := p.eat_token(lexer.IDENTIFIER)
-		return &ast.Variable{Name: val}, nil
+		return &ast.Variable{Name: val, NodeInfo: p.infoFrom(start)}, nil
 	case lexer.L_PARENTHESES:
 		p.eat_token(lexer.L_PARENTHESES)
 		expr, err := p.parse_expression()
@@ -156,6 +193,10 @@ func (p *Parser) parse_primary() (ast.Expr, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		expr.Info().JoinSpan(
+			p.spanFrom(start),
+		)
 		return expr, nil
 	}
 
@@ -246,18 +287,20 @@ func (p *Parser) parse_operator_type() operators.OperatorType {
 
 func (p *Parser) parse_operator() *ast.Operator {
 	diagnostics.Dbg("Parsing operator!")
+	start := p.mark()
 	op_type := p.parse_operator_type()
 	diagnostics.Dbg("Resolved Type: ", op_type)
 
 	if op_type == operators.UNRECOGNIZED {
 		return nil
 	} else {
-		return &ast.Operator{Type: op_type}
+		return &ast.Operator{Type: op_type, NodeInfo: p.infoFrom(start)}
 	}
 }
 
 func (p *Parser) parse_operand() (ast.Expr, error) {
 	diagnostics.Dbg("Parsing operand!")
+	start := p.mark()
 	// Try parsing a unary operator
 	op := p.parse_operator()
 	if op == nil {
@@ -267,7 +310,7 @@ func (p *Parser) parse_operand() (ast.Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &ast.UnaryOperation{Op: *op, Expr: rhs}, nil
+		return &ast.UnaryOperation{Op: *op, Expr: rhs, NodeInfo: p.infoFrom(start)}, nil
 	}
 }
 
@@ -337,7 +380,16 @@ func (p *Parser) postfix_to_expression(chain []ast.Node) (ast.Expr, error) {
 			swapped = true
 			/* Replace with new expression */
 			chain = slices.Delete(chain, i, i+3)
-			chain = slices.Insert(chain, i, ast.Node(ast.BinaryOperation{LHS: first, RHS: second, Op: third}))
+			chain = slices.Insert(chain, i, ast.Node(
+				&ast.BinaryOperation{
+					LHS: first,
+					RHS: second,
+					Op:  third,
+					NodeInfo: ast.NodeInfo{
+						Span: models.JoinSpans(first.NodeSpan(), second.NodeSpan(), third.NodeSpan()),
+					},
+				},
+			))
 		}
 
 		if len(chain) == 1 {
@@ -381,6 +433,7 @@ func (p *Parser) parse_expression_list() ([]ast.Expr, error) {
 
 func (p *Parser) parse_main_function() (*ast.MainFunction, error) {
 	diagnostics.Dbg("Parsing main functions...")
+	start := p.mark()
 	var err error
 	/* Set the proper structure */
 	_, err = p.eat_keyword(lexer.ALGORITMO)
@@ -393,6 +446,8 @@ func (p *Parser) parse_main_function() (*ast.MainFunction, error) {
 		return nil, err
 	}
 
+	info := p.infoFrom(start)
+
 	stmts, err := p.parse_statement_block()
 	if err != nil {
 		return nil, err
@@ -403,7 +458,7 @@ func (p *Parser) parse_main_function() (*ast.MainFunction, error) {
 		return nil, err
 	}
 
-	return &ast.MainFunction{Name: fn_name, Stmts: stmts}, nil
+	return &ast.MainFunction{Name: fn_name, Stmts: stmts, NodeInfo: info}, nil
 }
 
 func (p *Parser) parse_statement_block() ([]ast.Stmt, error) {
@@ -453,6 +508,7 @@ func (p *Parser) parse_statement() (ast.Stmt, error) {
 func (p *Parser) parse_assignment() (ast.Stmt, error) {
 	diagnostics.Dbg("Parsing assignment...")
 	tk, _ := p.get()
+	start := p.mark()
 	diagnostics.Dbgfmt("On token: %+v\n", tk)
 	target, err := p.parse_expression()
 	if err != nil {
@@ -466,7 +522,7 @@ func (p *Parser) parse_assignment() (ast.Stmt, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ast.Assignment{Target: target, Content: content}, nil
+	return &ast.Assignment{Target: target, Content: content, NodeInfo: p.infoFrom(start)}, nil
 }
 
 func (p *Parser) parse_keyword() (ast.Stmt, error) {
@@ -498,6 +554,7 @@ func (p *Parser) parse_keyword() (ast.Stmt, error) {
 
 func (p *Parser) parse_write() (ast.Stmt, error) {
 	diagnostics.Dbg("Parsing write...")
+	start := p.mark()
 	_, err := p.eat_keyword(lexer.ESCRIBIR)
 	if err != nil {
 		return nil, err
@@ -508,11 +565,12 @@ func (p *Parser) parse_write() (ast.Stmt, error) {
 		return nil, err
 	}
 
-	return &ast.Write{Print: print}, nil
+	return &ast.Write{Print: print, NodeInfo: p.infoFrom(start)}, nil
 }
 
 func (p *Parser) parse_while() (ast.Stmt, error) {
 	diagnostics.Dbg("Parsing while...")
+	start := p.mark()
 	_, err := p.eat_keyword(lexer.MIENTRAS)
 	if err != nil {
 		return nil, err
@@ -539,5 +597,5 @@ func (p *Parser) parse_while() (ast.Stmt, error) {
 		return nil, err
 	}
 
-	return ast.While{Condition: condition, Stmts: stmts}, nil
+	return &ast.While{Condition: condition, Stmts: stmts, NodeInfo: p.infoFrom(start)}, nil
 }

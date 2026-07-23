@@ -76,11 +76,10 @@ func run() error {
 	ds := lexer.Diagnostics()
 
 	for i, d := range ds {
-		fm, err := diagnostics.FormatDiagnostic(filename, bytes, d)
+		err := diagnostics.PrintFileDiagnostic(filename, d)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "<err #%d could not be shown (%s)>", i+1, err.Error())
 		}
-		fmt.Fprintln(os.Stderr, fm)
 	}
 
 	e, w, _ := diagnostics.Summary(ds)
@@ -113,11 +112,10 @@ func run() error {
 				Msg:   err.Error(),
 			}
 
-			fm, err := diagnostics.FormatDiagnostic(filename, bytes, d)
+			err := diagnostics.PrintFileDiagnostic(filename, d)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "<err could not be shown (%s)>", err.Error())
 			}
-			fmt.Fprintln(os.Stderr, fm)
 		}
 
 		return err
@@ -134,11 +132,10 @@ func run() error {
 	tast_tree, ds := analyzer.Analyze(mf)
 
 	for i, d := range ds {
-		fm, err := diagnostics.FormatDiagnostic(filename, bytes, d)
+		err := diagnostics.PrintFileDiagnostic(filename, d)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "<err #%d could not be shown (%s)>", i+1, err.Error())
 		}
-		fmt.Fprintln(os.Stderr, fm)
 	}
 
 	e, w, _ = diagnostics.Summary(ds)

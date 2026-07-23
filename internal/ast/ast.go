@@ -11,6 +11,10 @@ type NodeInfo struct {
 	Span models.Span
 }
 
+func (ni NodeInfo) JoinSpan(span models.Span) {
+	ni.Span = models.JoinSpans(ni.Span, span)
+}
+
 func (ni NodeInfo) Info() NodeInfo {
 	return ni
 }
