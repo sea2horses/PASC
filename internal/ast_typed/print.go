@@ -8,12 +8,12 @@ import (
 )
 
 // Print prints a TAST node to stdout.
-func Print(node any) {
+func Print(node Node) {
 	fmt.Print(Dump(node))
 }
 
 // Dump returns a textual tree representation of a TAST node.
-func Dump(node any) string {
+func Dump(node Node) string {
 	var builder strings.Builder
 
 	printer := treePrinter{
@@ -396,7 +396,7 @@ func (p *treePrinter) printUnaryOperation(
 	)
 
 	p.line(depth+1, "Operator:")
-	p.printOperator(&expression.Op, depth+2)
+	p.printOperator(expression.Op, depth+2)
 
 	p.line(depth+1, "Expression:")
 	p.printExpr(expression.Expr, depth+2)
@@ -422,7 +422,7 @@ func (p *treePrinter) printBinaryOperation(
 	p.printExpr(expression.LHS, depth+2)
 
 	p.line(depth+1, "Operator:")
-	p.printOperator(&expression.Op, depth+2)
+	p.printOperator(expression.Op, depth+2)
 
 	p.line(depth+1, "Right:")
 	p.printExpr(expression.RHS, depth+2)

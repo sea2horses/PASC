@@ -173,6 +173,7 @@ func (a *Analyzer) analyze_assignment(ass *ast.Assignment) *tast.Assignment {
 	variable, ok := ass.Target.(*ast.Variable)
 	typed_expr := a.analyze_expression(ass.Content)
 	nonvoid := a.assert_nonvoid(typed_expr)
+	declarative := false
 
 	diagnostics.Dbg("Target: ", ass.Target, reflect.TypeOf(ass.Target))
 
@@ -197,6 +198,8 @@ func (a *Analyzer) analyze_assignment(ass *ast.Assignment) *tast.Assignment {
 					Mutable:  true,
 				},
 			)
+
+			declarative = true
 		}
 	}
 	target := a.analyze_expression(ass.Target)
@@ -226,9 +229,10 @@ func (a *Analyzer) analyze_assignment(ass *ast.Assignment) *tast.Assignment {
 	}
 
 	return &tast.Assignment{
-		NodeInfo: ass.NodeInfo,
-		Target:   lvalue,
-		Value:    typed_expr,
+		NodeInfo:    ass.NodeInfo,
+		Target:      lvalue,
+		Value:       typed_expr,
+		Declarative: declarative,
 	}
 }
 
@@ -429,8 +433,8 @@ func (a *Analyzer) analyze_variable(variable *ast.Variable) *tast.VariableExpr {
 	}
 }
 
-func (a *Analyzer) analyze_operator(op ast.Operator) tast.Operator {
-	return tast.Operator{
+func (a *Analyzer) analyze_operator(op ast.Operator) *tast.Operator {
+	return &tast.Operator{
 		NodeInfo: op.NodeInfo,
 		Op:       op.Type,
 	}

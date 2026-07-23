@@ -6,10 +6,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"pseint-compiled/internal/analyzer"
 	"pseint-compiled/internal/ast"
 	tast "pseint-compiled/internal/ast_typed"
 	"pseint-compiled/internal/diagnostics"
+	"pseint-compiled/internal/generator"
 	"pseint-compiled/internal/lexer"
 	"pseint-compiled/internal/parser"
 )
@@ -148,55 +150,55 @@ func run() error {
 	}
 
 	// Print tast
-	fmt.Println(tast.Dump(tast_tree))
+	diagnostics.Dbg(tast.Dump(tast_tree))
 
-	// diagnostics.Dbg("Generating code...")
-	// codegen := generator.CodeGenerator{}
+	diagnostics.Dbg("Generating code...")
+	codegen := generator.CodeGenerator{}
 
-	// code_bytes := codegen.Generate(ast)
-	// var data []byte = append(runtime, code_bytes...)
+	code_bytes := codegen.Generate(tast_tree)
+	var data []byte = append(runtime, code_bytes...)
 
-	// diagnostics.Dbg("Generated data\n", string(data))
+	diagnostics.Dbg("Generated data\n", string(data))
 
-	// // Code path
-	// code_path := OUTPUT + CG_FILENAME
-	// out_path := OUTPUT + "out"
+	// Code path
+	code_path := OUTPUT + CG_FILENAME
+	out_path := OUTPUT + "out"
 
-	// if err = os.MkdirAll(OUTPUT, 0755); err != nil {
-	// 	return err
-	// }
+	if err = os.MkdirAll(OUTPUT, 0755); err != nil {
+		return err
+	}
 
-	// err = os.WriteFile(code_path, data, 0644)
-	// if err != nil {
-	// 	return err
-	// }
+	err = os.WriteFile(code_path, data, 0644)
+	if err != nil {
+		return err
+	}
 
-	// cmd := exec.Command(
-	// 	"bash",
-	// 	"-c",
-	// 	"go build -o \"$1\" \"$2\"",
-	// 	"bash",
-	// 	out_path,
-	// 	code_path,
-	// )
-	// cmd.Stderr = os.Stderr
-	// cmd.Stdout = os.Stdout
-	// cmd.Stdin = os.Stdin
+	cmd := exec.Command(
+		"bash",
+		"-c",
+		"go build -o \"$1\" \"$2\"",
+		"bash",
+		out_path,
+		code_path,
+	)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
 
-	// err = cmd.Run()
-	// if err != nil {
-	// 	return err
-	// }
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
 
-	// run := exec.Command(out_path)
-	// run.Stderr = os.Stderr
-	// run.Stdout = os.Stdout
-	// run.Stdin = os.Stdin
+	run := exec.Command(out_path)
+	run.Stderr = os.Stderr
+	run.Stdout = os.Stdout
+	run.Stdin = os.Stdin
 
-	// err = run.Run()
-	// if err != nil {
-	// 	return err
-	// }
+	err = run.Run()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -62,16 +62,17 @@ var BinaryOperationTable = []BinaryOperationRule{
 	{operators.DIVIDE, RealType, IntegerType, RealType, ConversionNone, ConversionIntegerToReal},
 	{operators.DIVIDE, RealType, RealType, RealType, ConversionNone, ConversionNone},
 
-	{operators.POWER, IntegerType, IntegerType, RealType, ConversionIntegerToReal, ConversionIntegerToReal},
-	{operators.POWER, IntegerType, RealType, RealType, ConversionIntegerToReal, ConversionNone},
-	{operators.POWER, RealType, IntegerType, RealType, ConversionNone, ConversionIntegerToReal},
-	{operators.POWER, RealType, RealType, RealType, ConversionNone, ConversionNone},
+	// Power will be shelved since it needs a function
+	// {operators.POWER, IntegerType, IntegerType, RealType, ConversionIntegerToReal, ConversionIntegerToReal},
+	// {operators.POWER, IntegerType, RealType, RealType, ConversionIntegerToReal, ConversionNone},
+	// {operators.POWER, RealType, IntegerType, RealType, ConversionNone, ConversionIntegerToReal},
+	// {operators.POWER, RealType, RealType, RealType, ConversionNone, ConversionNone},
 
 	// MOD is strict and integer-only.
 	{operators.MODULO, IntegerType, IntegerType, IntegerType, ConversionNone, ConversionNone},
 	{operators.MODULO, IntegerType, RealType, IntegerType, ConversionNone, ConversionRealToIntegerExact},
-	{operators.MULTIPLY, RealType, IntegerType, RealType, ConversionRealToIntegerExact, ConversionNone},
-	{operators.MULTIPLY, RealType, RealType, IntegerType, ConversionRealToIntegerExact, ConversionRealToIntegerExact},
+	{operators.MODULO, RealType, IntegerType, RealType, ConversionRealToIntegerExact, ConversionNone},
+	{operators.MODULO, RealType, RealType, IntegerType, ConversionRealToIntegerExact, ConversionRealToIntegerExact},
 
 	// Numeric ordering.
 	{operators.GREATER, IntegerType, IntegerType, BooleanType, ConversionNone, ConversionNone},

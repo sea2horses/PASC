@@ -46,7 +46,13 @@ func Write(values ...any) {
 		case string:
 			writer.WriteString(val)
 		case float64:
-			writer.WriteString(strconv.FormatFloat(val, 'f', 2, 64))
+			s := strconv.FormatFloat(val, 'f', 10, 64)
+			// Clean up if decimal
+			if strings.Contains(s, ".") {
+				s = strings.TrimRight(s, "0")
+				s = strings.Trim(s, ".")
+			}
+			writer.WriteString(s)
 		case bool:
 			if val {
 				writer.WriteString("VERDADERO")

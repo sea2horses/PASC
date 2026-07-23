@@ -13,7 +13,9 @@ type Node interface {
 	NodeSpan() models.Span
 }
 
-type Stmt interface{}
+type Stmt interface {
+	Node
+}
 
 type TypedExpr interface {
 	Node
@@ -110,7 +112,7 @@ type Operator struct {
 
 type UnaryOperation struct {
 	ast.NodeInfo
-	Op           Operator
+	Op           *Operator
 	Expr         TypedExpr
 	ResolvedType semantic.Type
 }
@@ -124,7 +126,7 @@ func (uo UnaryOperation) Type() semantic.Type {
 type BinaryOperation struct {
 	ast.NodeInfo
 	LHS          TypedExpr
-	Op           Operator
+	Op           *Operator
 	RHS          TypedExpr
 	ResolvedType semantic.Type
 }
@@ -137,8 +139,9 @@ func (uo BinaryOperation) Type() semantic.Type {
 
 type Assignment struct {
 	ast.NodeInfo
-	Target LValue
-	Value  TypedExpr
+	Declarative bool /* MUST be used if it's first use */
+	Target      LValue
+	Value       TypedExpr
 }
 
 type Cast struct {
