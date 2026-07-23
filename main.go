@@ -2,12 +2,14 @@ package main
 
 import (
 	_ "embed"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
+	"pseint-compiled/internal/analyzer"
+	"pseint-compiled/internal/ast"
+	tast "pseint-compiled/internal/ast_typed"
 	"pseint-compiled/internal/diagnostics"
-	"pseint-compiled/internal/generator"
 	"pseint-compiled/internal/lexer"
 	"pseint-compiled/internal/parser"
 )
@@ -101,7 +103,7 @@ func run() error {
 
 	diagnostics.Dbg("AST Parsing...")
 	parser := parser.Parser{Tokens: tokens}
-	ast, err := parser.Parse()
+	ast_tree, err := parser.Parse()
 	if err != nil {
 		tok, _ := parser.LastAt()
 		if tok != nil {
@@ -120,55 +122,84 @@ func run() error {
 
 		return err
 	}
-	diagnostics.Dbg(ast.String())
+	diagnostics.Dbg(ast_tree.String())
 
-	diagnostics.Dbg("Generating code...")
-	codegen := generator.CodeGenerator{}
-
-	code_bytes := codegen.Generate(ast)
-	var data []byte = append(runtime, code_bytes...)
-
-	diagnostics.Dbg("Generated data\n", string(data))
-
-	// Code path
-	code_path := OUTPUT + CG_FILENAME
-	out_path := OUTPUT + "out"
-
-	if err = os.MkdirAll(OUTPUT, 0755); err != nil {
-		return err
+	diagnostics.Dbg("Analyzing...")
+	analyzer := analyzer.New()
+	mf, ok := ast_tree.(*ast.MainFunction)
+	if !ok {
+		return errors.New("main function not found")
 	}
 
-	err = os.WriteFile(code_path, data, 0644)
-	if err != nil {
-		return err
+	tast_tree, ds := analyzer.Analyze(mf)
+
+	for i, d := range ds {
+		fm, err := diagnostics.FormatDiagnostic(filename, bytes, d)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "<err #%d could not be shown (%s)>", i+1, err.Error())
+		}
+		fmt.Fprintln(os.Stderr, fm)
 	}
 
-	cmd := exec.Command(
-		"bash",
-		"-c",
-		"go build -o \"$1\" \"$2\"",
-		"bash",
-		out_path,
-		code_path,
-	)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
-
-	err = cmd.Run()
-	if err != nil {
-		return err
+	e, w, _ = diagnostics.Summary(ds)
+	if e > 0 || w > 0 {
+		fmt.Fprintf(os.Stderr, "(%d errors, %d warnings)\n", e, w)
 	}
 
-	run := exec.Command(out_path)
-	run.Stderr = os.Stderr
-	run.Stdout = os.Stdout
-	run.Stdin = os.Stdin
-
-	err = run.Run()
-	if err != nil {
-		return err
+	if e > 0 {
+		return diagnostics.SummaryAsError(ds)
 	}
+
+	// Print tast
+	fmt.Println(tast.Dump(tast_tree))
+
+	// diagnostics.Dbg("Generating code...")
+	// codegen := generator.CodeGenerator{}
+
+	// code_bytes := codegen.Generate(ast)
+	// var data []byte = append(runtime, code_bytes...)
+
+	// diagnostics.Dbg("Generated data\n", string(data))
+
+	// // Code path
+	// code_path := OUTPUT + CG_FILENAME
+	// out_path := OUTPUT + "out"
+
+	// if err = os.MkdirAll(OUTPUT, 0755); err != nil {
+	// 	return err
+	// }
+
+	// err = os.WriteFile(code_path, data, 0644)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// cmd := exec.Command(
+	// 	"bash",
+	// 	"-c",
+	// 	"go build -o \"$1\" \"$2\"",
+	// 	"bash",
+	// 	out_path,
+	// 	code_path,
+	// )
+	// cmd.Stderr = os.Stderr
+	// cmd.Stdout = os.Stdout
+	// cmd.Stdin = os.Stdin
+
+	// err = cmd.Run()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// run := exec.Command(out_path)
+	// run.Stderr = os.Stderr
+	// run.Stdout = os.Stdout
+	// run.Stdin = os.Stdin
+
+	// err = run.Run()
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

@@ -27,6 +27,7 @@ type AssignmentOrigin struct {
 }
 
 type LValue interface {
+	TypedExpr
 	lvalue()
 	AssignmentOrigin() *AssignmentOrigin
 	IsMutable() bool
@@ -99,7 +100,7 @@ func (v VariableExpr) AssignmentOrigin() *AssignmentOrigin {
 }
 
 func (v VariableExpr) IsMutable() bool {
-	return v.IsMutable()
+	return v.Symbol.Mutable
 }
 
 type Operator struct {
