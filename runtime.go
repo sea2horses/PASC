@@ -120,7 +120,7 @@ func ToIntegerExact(value float64) int64 {
 	return int64(value)
 }
 
-func IntegerToFloat(value int64) float64 {
+func IntegerToReal(value int64) float64 {
 	return float64(value)
 }
 

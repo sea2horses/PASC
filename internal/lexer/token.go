@@ -20,6 +20,8 @@ const (
 	EQUALS        // =
 	L_PARENTHESES // (
 	R_PARENTHESES // )
+	L_BRACKET     // [
+	R_BRACKET     // ]
 
 	// Binary Operators
 	// Arithmetic
@@ -60,4 +62,6 @@ var charMap map[rune]TokenType = map[rune]TokenType{
 	'&': AMPERSAND,
 	'|': PIPE,
 	'!': EX_MARK,
+	'[': L_BRACKET,
+	']': R_BRACKET,
 }
