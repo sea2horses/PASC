@@ -11,24 +11,20 @@ func (p *Parser) parse_if() (ast.Stmt, error) {
 	start := p.mark()
 	_, err := p.eat_keyword(lexer.SI)
 	if err != nil {
-		return nil, err
+		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.SI})
 	}
 
 	condition, err := p.parse_expression()
-	if err != nil {
-		return nil, err
-	}
 
 	_, err = p.eat_keyword(lexer.ENTONCES)
 	if err != nil {
-		return nil, err
+		p.Warn(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.ENTONCES})
 	}
+
+	info := p.infoFrom(start)
 
 	/* Parse if statement block */
 	stmts, err := p.parse_statement_block()
-	if err != nil {
-		return nil, err
-	}
 
 	var else_branch *ast.Else = nil
 
@@ -44,10 +40,11 @@ func (p *Parser) parse_if() (ast.Stmt, error) {
 
 	_, err = p.eat_keyword(lexer.FINSI)
 	if err != nil {
-		return nil, err
+		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.FINSI})
+		p.Info(info.Span, "%s", "declared here")
 	}
 
-	return &ast.If{Condition: condition, Stmts: stmts, Else: else_branch, NodeInfo: p.infoFrom(start)}, nil
+	return &ast.If{Condition: condition, Stmts: stmts, Else: else_branch, NodeInfo: info}, nil
 }
 
 func (p *Parser) parse_else() (*ast.Else, error) {
@@ -55,16 +52,15 @@ func (p *Parser) parse_else() (*ast.Else, error) {
 
 	_, err := p.eat_keyword(lexer.SINO)
 	if err != nil {
+		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.SINO})
 		return nil, err
 	}
+
+	info := p.infoFrom(start)
 
 	/* Parse if statement block */
 	stmts, err := p.parse_statement_block()
-	if err != nil {
-		return nil, err
-	}
-
-	return &ast.Else{Stmts: stmts, NodeInfo: p.infoFrom(start)}, nil
+	return &ast.Else{Stmts: stmts, NodeInfo: info}, nil
 }
 
 func (p *Parser) parse_while() (ast.Stmt, error) {
@@ -72,29 +68,26 @@ func (p *Parser) parse_while() (ast.Stmt, error) {
 	start := p.mark()
 	_, err := p.eat_keyword(lexer.MIENTRAS)
 	if err != nil {
-		return nil, err
+		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.MIENTRAS})
 	}
 
 	condition, err := p.parse_expression()
-	if err != nil {
-		return nil, err
-	}
 
 	/* TODO: Make it a language option for optional 'Hacer' */
 	_, err = p.eat_keyword(lexer.HACER)
 	if err != nil {
-		return nil, err
+		p.Warn(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.HACER})
 	}
 
+	info := p.infoFrom(start)
+
 	stmts, err := p.parse_statement_block()
-	if err != nil {
-		return nil, err
-	}
 
 	_, err = p.eat_keyword(lexer.FINMIENTRAS)
 	if err != nil {
-		return nil, err
+		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.FINMIENTRAS})
+		p.Info(info.Span, "declared here")
 	}
 
-	return &ast.While{Condition: condition, Stmts: stmts, NodeInfo: p.infoFrom(start)}, nil
+	return &ast.While{Condition: condition, Stmts: stmts, NodeInfo: info}, nil
 }

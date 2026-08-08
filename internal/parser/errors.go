@@ -13,12 +13,14 @@ func (pe ParserError) Error() string {
 
 const (
 	ErrOutOfBounds         = ParserError("index is out of bounds")
+	ErrUnexpectedEOF       = ParserError("unexpected EOF (end of file)")
 	ErrUnrecognizedKeyword = ParserError("unrecognized keyword")
 	ErrNotImplemented      = ParserError("not implemented")
 	ErrExpectedOperand     = ParserError("expected operand")
 	ErrUnexpectedNode      = ParserError("unexpected node in expression")
 	ErrInvalidExpression   = ParserError("invalid expression")
 	ErrExpectedType        = ParserError("expected type")
+	ErrInvalidStatement    = ParserError("statement contains errors")
 )
 
 type ErrExpectedToken struct {

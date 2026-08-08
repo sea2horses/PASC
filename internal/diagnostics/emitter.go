@@ -5,8 +5,23 @@ import (
 	"pseint-compiled/internal/models"
 )
 
+type DiagnosticInfo struct {
+	ErrorCount   uint8
+	WarningCount uint8
+	InfoCount    uint8
+}
+
+func (di DiagnosticInfo) Any() bool {
+	return di.ErrorCount > 0 || di.WarningCount > 0 || di.InfoCount > 0
+}
+
+func (di DiagnosticInfo) AnyError() bool {
+	return di.ErrorCount > 0
+}
+
 type DiagnosticEmitter struct {
 	diagnostics []Diagnostic
+	DiagnosticInfo
 }
 
 func (d *DiagnosticEmitter) diagnosis(span models.Span, level DiagnosticLevel, format string, args ...any) {
@@ -16,6 +31,15 @@ func (d *DiagnosticEmitter) diagnosis(span models.Span, level DiagnosticLevel, f
 		Msg:   fmt.Sprintf(format, args...),
 		Level: level,
 	})
+
+	switch level {
+	case (ERROR):
+		d.DiagnosticInfo.ErrorCount++
+	case (WARNING):
+		d.DiagnosticInfo.WarningCount++
+	case (INFO):
+		d.DiagnosticInfo.InfoCount++
+	}
 }
 
 func NewDiagnosticEmitter() DiagnosticEmitter {
@@ -39,4 +63,20 @@ func (d *DiagnosticEmitter) Warn(span models.Span, format string, args ...any) {
 
 func (d *DiagnosticEmitter) Info(span models.Span, format string, args ...any) {
 	d.diagnosis(span, INFO, format, args...)
+}
+
+func (d *DiagnosticEmitter) Checkpoint() DiagnosticInfo {
+	return d.DiagnosticInfo
+}
+
+func (d *DiagnosticEmitter) Diff(old DiagnosticInfo) DiagnosticInfo {
+	return DiagnosticInfo{
+		ErrorCount:   d.ErrorCount - old.ErrorCount,
+		WarningCount: d.WarningCount - old.WarningCount,
+		InfoCount:    d.InfoCount - old.InfoCount,
+	}
+}
+
+func (d *DiagnosticEmitter) AnyErrorSince(checkpoint DiagnosticInfo) bool {
+	return d.Diff(checkpoint).AnyError()
 }

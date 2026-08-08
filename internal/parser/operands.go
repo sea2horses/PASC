@@ -45,6 +45,7 @@ func (p *Parser) parse_primary() (ast.Expr, error) {
 			p.eat_token(lexer.DOT)
 			val, err := p.eat_token(lexer.NUMBER_LITERAL)
 			if err != nil {
+				p.Report(p.currentSpan(), "expected decimal part")
 				return nil, err
 			}
 			frac, _ = lexer.MapToNumber([]rune(val))

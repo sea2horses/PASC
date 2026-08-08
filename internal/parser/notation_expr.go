@@ -16,6 +16,7 @@ func (p *Parser) read_infix_to_postfix() ([]ast.Node, error) {
 		/* Parse operand */
 		expr, err := p.parse_operand()
 		if err != nil {
+			p.Report(p.currentSpan(), "expected operand")
 			return nil, err
 		}
 

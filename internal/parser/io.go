@@ -11,14 +11,10 @@ func (p *Parser) parse_write() (ast.Stmt, error) {
 	start := p.mark()
 	_, err := p.eat_keyword(lexer.ESCRIBIR)
 	if err != nil {
-		return nil, err
+		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.ESCRIBIR})
 	}
 	/* Expressions to be printed */
 	print, err := p.parse_expression_list()
-	if err != nil {
-		return nil, err
-	}
-
 	return &ast.Write{Print: print, NodeInfo: p.infoFrom(start)}, nil
 }
 
@@ -27,14 +23,10 @@ func (p *Parser) parse_read() (ast.Stmt, error) {
 	start := p.mark()
 	_, err := p.eat_keyword(lexer.LEER)
 	if err != nil {
-		return nil, err
+		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.LEER})
 	}
 	/* Expressions to be read */
 	into, err := p.parse_expression_list()
-	if err != nil {
-		return nil, err
-	}
-
 	return &ast.Read{Into: into, NodeInfo: p.infoFrom(start)}, nil
 }
 
@@ -42,11 +34,13 @@ func (p *Parser) parse_clear_screen() (ast.Stmt, error) {
 	start := p.mark()
 	_, err := p.eat_keyword(lexer.BORRAR)
 	if err != nil {
+		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.BORRAR})
 		return nil, err
 	}
 
 	_, err = p.eat_keyword(lexer.PANTALLA)
 	if err != nil {
+		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.PANTALLA})
 		return nil, err
 	}
 

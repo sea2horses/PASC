@@ -50,7 +50,7 @@ func (sl StringLiteral) String() string {
 type NumberLiteral struct {
 	NodeInfo
 	Int  uint64
-	Frac uint64
+	Frac uint64 /* TODO: THIS IS FUCKED, because of 1.001 */
 }
 
 func (nl NumberLiteral) String() string {
@@ -112,6 +112,16 @@ type BinaryOperation struct {
 
 func (bo BinaryOperation) String() string {
 	return fmt.Sprintf("(%s %s %s)", bo.LHS, bo.Op, bo.RHS)
+}
+
+/* Expression as Statement */
+type ExprStmt struct {
+	NodeInfo
+	Expr Expr
+}
+
+func (e ExprStmt) String() string {
+	return fmt.Sprintf("%s", e.String())
 }
 
 type Declaration struct {

@@ -30,6 +30,16 @@ func (p *Parser) eof() bool {
 	return p.position >= uint32(len(p.Tokens))
 }
 
+/* Returns whether if parser is at End of Line, if at EOF, returns false */
+func (p *Parser) eol() bool {
+	if p.eof() {
+		return false
+	}
+
+	tok, _ := p.get()
+	return tok.Type == lexer.NEWLINE
+}
+
 func (p *Parser) currentSpan() models.Span {
 	if token, err := p.get(); err == nil {
 		return token.Span
@@ -58,6 +68,10 @@ func (p *Parser) at(position uint32) (*lexer.Token, error) {
 
 func (p *Parser) mark() uint32 {
 	return p.position
+}
+
+func (p *Parser) snapshot() (uint32, diagnostics.DiagnosticInfo) {
+	return p.mark(), p.Checkpoint()
 }
 
 func (p *Parser) spanFrom(start uint32) models.Span {
@@ -104,12 +118,12 @@ func (p *Parser) get() (*lexer.Token, error) {
 	return p.at(p.position)
 }
 
-/* Runs a predicate against every token, if predicate was successful, returns true, if it got to EOF, returns false */
+/* Runs a predicate against every token, if predicate was successful, returns true, if it got to EOL (end-of-line), returns false */
 func (p *Parser) until(predicate func(lexer.Token) bool) bool {
 	token, err := p.get()
 
 	for err == nil {
-		if predicate(*token) {
+		if predicate(*token) || p.eol() {
 			break
 		}
 
@@ -117,7 +131,7 @@ func (p *Parser) until(predicate func(lexer.Token) bool) bool {
 		token, err = p.get()
 	}
 
-	return !p.eof()
+	return !p.eof() && !p.eol()
 }
 
 /* Skips to token, return true if token type was found */
@@ -136,13 +150,19 @@ func (p *Parser) skip_to_keyword(keyword lexer.Keyword) bool {
 	)
 }
 
+func (p *Parser) skip_to_nextline() bool {
+	ok := p.skip_to_token(lexer.NEWLINE)
+	p.eat_token(lexer.NEWLINE)
+	return ok
+}
+
 func (p *Parser) eat_token(token_type lexer.TokenType) (string, error) {
 	diagnostics.Dbg("Ate token: ", token_type)
-	token, err := p.get()
-
-	if err != nil {
-		return "", err
+	if p.eof() {
+		return "", ErrUnexpectedEOF
 	}
+
+	token, _ := p.get()
 
 	if token.Type != token_type {
 		diagnostics.Dbg("Didn't go well!")
@@ -156,10 +176,12 @@ func (p *Parser) eat_token(token_type lexer.TokenType) (string, error) {
 
 func (p *Parser) eat_keyword(expected lexer.Keyword) (*lexer.Keyword, error) {
 	diagnostics.Dbg("Ate keyword: ", expected)
-	tok, err := p.get()
-	if err != nil {
-		return nil, ErrExpectedKeyword{Expected: expected}
+	if p.eof() {
+		p.Report(p.currentSpan(), "%s", ErrUnexpectedEOF)
+		return nil, ErrUnexpectedEOF
 	}
+
+	tok, _ := p.get()
 
 	keyword, ok := lexer.MapToKeyword([]rune(tok.Value))
 	if !ok {

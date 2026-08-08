@@ -20,12 +20,11 @@ func (p *Parser) parse_expression() (ast.Expr, error) {
 func (p *Parser) parse_expression_list() ([]ast.Expr, error) {
 	expr_list := []ast.Expr{}
 	for {
-		expr, err := p.parse_expression()
-		if err != nil {
-			return nil, err
+		expr, _ := p.parse_expression()
+		if expr != nil {
+			expr_list = append(expr_list, expr)
 		}
 
-		expr_list = append(expr_list, expr)
 		if tok, err := p.get(); err != nil || tok.Type != lexer.COMMA {
 			break
 		}
