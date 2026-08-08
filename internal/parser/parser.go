@@ -26,10 +26,6 @@ func (p *Parser) Parse() (ast.Node, []diagnostics.Diagnostic) {
 	return program, slices.Clone(p.Diagnostics())
 }
 
-func (p *Parser) LastAt() (*lexer.Token, error) {
-	return p.get()
-}
-
 func (p *Parser) eof() bool {
 	return p.position >= uint32(len(p.Tokens))
 }
@@ -121,7 +117,7 @@ func (p *Parser) until(predicate func(lexer.Token) bool) bool {
 		token, err = p.get()
 	}
 
-	return err == nil
+	return !p.eof()
 }
 
 /* Skips to token, return true if token type was found */
@@ -160,12 +156,12 @@ func (p *Parser) eat_token(token_type lexer.TokenType) (string, error) {
 
 func (p *Parser) eat_keyword(expected lexer.Keyword) (*lexer.Keyword, error) {
 	diagnostics.Dbg("Ate keyword: ", expected)
-	value, err := p.eat_token(lexer.KEYWORD)
+	tok, err := p.get()
 	if err != nil {
 		return nil, ErrExpectedKeyword{Expected: expected}
 	}
 
-	keyword, ok := lexer.MapToKeyword([]rune(value))
+	keyword, ok := lexer.MapToKeyword([]rune(tok.Value))
 	if !ok {
 		return nil, ErrUnrecognizedKeyword
 	}
@@ -173,6 +169,8 @@ func (p *Parser) eat_keyword(expected lexer.Keyword) (*lexer.Keyword, error) {
 	if keyword != expected {
 		return nil, ErrExpectedKeyword{Expected: expected}
 	}
+
+	p.position++
 
 	return &keyword, nil
 }

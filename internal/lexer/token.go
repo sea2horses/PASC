@@ -37,6 +37,7 @@ const (
 	EX_MARK   // !
 
 	// Special
+	NEWLINE
 	EOF
 )
 
@@ -51,20 +52,21 @@ type Token struct {
 var NULL_TOKEN = Token{Type: EOF}
 
 var charMap map[rune]TokenType = map[rune]TokenType{
-	'.': DOT,
-	',': COMMA,
-	'=': EQUALS,
-	'(': L_PARENTHESES,
-	')': R_PARENTHESES,
-	'+': PLUS,
-	'-': MINUS,
-	'*': ASTERISK,
-	'/': SLASH,
-	'<': L_ANGLE,
-	'>': R_ANGLE,
-	'&': AMPERSAND,
-	'|': PIPE,
-	'!': EX_MARK,
-	'[': L_BRACKET,
-	']': R_BRACKET,
+	'.':  DOT,
+	',':  COMMA,
+	'=':  EQUALS,
+	'(':  L_PARENTHESES,
+	')':  R_PARENTHESES,
+	'+':  PLUS,
+	'-':  MINUS,
+	'*':  ASTERISK,
+	'/':  SLASH,
+	'<':  L_ANGLE,
+	'>':  R_ANGLE,
+	'&':  AMPERSAND,
+	'|':  PIPE,
+	'!':  EX_MARK,
+	'[':  L_BRACKET,
+	']':  R_BRACKET,
+	'\n': NEWLINE,
 }

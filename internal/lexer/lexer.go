@@ -72,7 +72,7 @@ func (l *Lexer) skip_whitespace() {
 	for {
 		ch, err := l.getch()
 
-		if err != nil || !unicode.IsSpace(ch) {
+		if err != nil || !unicode.IsSpace(ch) && ch != '\n' {
 			break
 		}
 
@@ -81,7 +81,7 @@ func (l *Lexer) skip_whitespace() {
 }
 
 /* Parse identifiers */
-func (l *Lexer) parse_identifier() (Token, error) {
+func (l *Lexer) tokenize_identifier() (Token, error) {
 	init_position := l.position
 
 	/* Run until reaching the end of the file or putting a stop */
@@ -136,7 +136,7 @@ func (l *Lexer) parse_identifier() (Token, error) {
 }
 
 /* Parse string literal */
-func (l *Lexer) parse_string_literal() (Token, error) {
+func (l *Lexer) tokenize_string_literal() (Token, error) {
 	init_position := l.position
 
 	/* Skip first " */
@@ -205,7 +205,7 @@ func (l *Lexer) parse_string_literal() (Token, error) {
 }
 
 /* Parse number literal */
-func (l *Lexer) parse_number_literal() (Token, error) {
+func (l *Lexer) tokenize_number_literal() (Token, error) {
 	init_position := l.position
 
 	for {
@@ -247,7 +247,7 @@ func (l *Lexer) parse_number_literal() (Token, error) {
 }
 
 /* TODO: Parse char */
-func (l *Lexer) parse_char() (Token, error) {
+func (l *Lexer) tokenize_character() (Token, error) {
 	/* Get current char */
 	ch, err := l.getch()
 
@@ -286,22 +286,22 @@ func (l *Lexer) Tokenize() ([]Token, error) {
 		if unicode.IsSpace(ch) {
 			l.skip_whitespace()
 		} else if ch == '"' {
-			token, err := l.parse_string_literal()
+			token, err := l.tokenize_string_literal()
 			if err == nil {
 				tokens = append(tokens, token)
 			}
 		} else if unicode.IsLetter(ch) || ch == '_' {
-			token, err := l.parse_identifier()
+			token, err := l.tokenize_identifier()
 			if err == nil {
 				tokens = append(tokens, token)
 			}
 		} else if unicode.IsNumber(ch) {
-			token, err := l.parse_number_literal()
+			token, err := l.tokenize_number_literal()
 			if err == nil {
 				tokens = append(tokens, token)
 			}
 		} else {
-			token, err := l.parse_char()
+			token, err := l.tokenize_character()
 			if err == nil {
 				tokens = append(tokens, token)
 			}
