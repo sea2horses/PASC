@@ -21,10 +21,15 @@ func (p *Parser) parse_if() (ast.Stmt, error) {
 		p.Warn(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.ENTONCES})
 	}
 
+	_, err = p.eat_token(lexer.NEWLINE)
+	if err != nil {
+		p.Report(p.currentSpan(), "expected newline")
+	}
+
 	info := p.infoFrom(start)
 
 	/* Parse if statement block */
-	stmts, err := p.parse_statement_block()
+	stmts, err := p.parse_statement_block(lexer.FINSI, lexer.SINO)
 
 	var else_branch *ast.Else = nil
 
@@ -53,13 +58,17 @@ func (p *Parser) parse_else() (*ast.Else, error) {
 	_, err := p.eat_keyword(lexer.SINO)
 	if err != nil {
 		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.SINO})
-		return nil, err
+	}
+
+	_, err = p.eat_token(lexer.NEWLINE)
+	if err != nil {
+		p.Report(p.currentSpan(), "expected newline")
 	}
 
 	info := p.infoFrom(start)
 
 	/* Parse if statement block */
-	stmts, err := p.parse_statement_block()
+	stmts, err := p.parse_statement_block(lexer.SINO)
 	return &ast.Else{Stmts: stmts, NodeInfo: info}, nil
 }
 
@@ -79,9 +88,14 @@ func (p *Parser) parse_while() (ast.Stmt, error) {
 		p.Warn(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.HACER})
 	}
 
+	_, err = p.eat_token(lexer.NEWLINE)
+	if err != nil {
+		p.Report(p.currentSpan(), "expected newline")
+	}
+
 	info := p.infoFrom(start)
 
-	stmts, err := p.parse_statement_block()
+	stmts, err := p.parse_statement_block(lexer.FINMIENTRAS)
 
 	_, err = p.eat_keyword(lexer.FINMIENTRAS)
 	if err != nil {

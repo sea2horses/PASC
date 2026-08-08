@@ -22,9 +22,6 @@ func (p *Parser) parse_statement_block(terminators ...lexer.Keyword) ([]ast.Stmt
 		}
 
 		stmt, err := p.parse_statement()
-		if err != nil {
-			return nil, err
-		}
 
 		_, err = p.eat_token(lexer.NEWLINE)
 		if err != nil {
@@ -32,7 +29,9 @@ func (p *Parser) parse_statement_block(terminators ...lexer.Keyword) ([]ast.Stmt
 			p.skip_to_nextline()
 		}
 
-		stmts = append(stmts, stmt)
+		if stmt != nil {
+			stmts = append(stmts, stmt)
+		}
 	}
 	return stmts, nil
 }
@@ -78,9 +77,14 @@ func (p *Parser) parse_main_function() (*ast.MainFunction, error) {
 		p.Report(p.currentSpan(), "%s", ErrExpectedToken{Expected: lexer.IDENTIFIER})
 	}
 
+	_, err = p.eat_token(lexer.NEWLINE)
+	if err != nil {
+		p.Report(p.currentSpan(), "expected newline")
+	}
+
 	info := p.infoFrom(start)
 
-	stmts, err := p.parse_statement_block()
+	stmts, err := p.parse_statement_block(lexer.FINALGORITMO)
 	/* TODO: Remove this */
 	if err != nil {
 		return nil, err
@@ -111,7 +115,7 @@ func (p *Parser) parse_expression_statement() (ast.Stmt, error) {
 	}
 
 	/* Assignment */
-	if tk, err := p.get(); err != nil && tk.Type == lexer.EQUALS {
+	if tk, err := p.get(); err == nil && tk.Type == lexer.EQUALS {
 		p.eat_token(lexer.EQUALS)
 		content, err := p.parse_expression()
 		if err != nil {

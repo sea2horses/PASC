@@ -72,7 +72,7 @@ func (l *Lexer) skip_whitespace() {
 	for {
 		ch, err := l.getch()
 
-		if err != nil || !unicode.IsSpace(ch) && ch != '\n' {
+		if err != nil || ch == '\n' || !unicode.IsSpace(ch) {
 			break
 		}
 
