@@ -25,10 +25,11 @@ type DiagnosticEmitter struct {
 }
 
 func (d *DiagnosticEmitter) diagnosis(span models.Span, level DiagnosticLevel, format string, args ...any) {
-	Dbg("Filing diagnosis of type: ", level, ". span: ", span)
+	msg := fmt.Sprintf(format, args...)
+	Dbg("Filing diagnosis of type: ", level, ". span: ", span, ". with message: ", msg)
 	d.diagnostics = append(d.diagnostics, Diagnostic{
 		Span:  span,
-		Msg:   fmt.Sprintf(format, args...),
+		Msg:   msg,
 		Level: level,
 	})
 

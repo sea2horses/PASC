@@ -283,7 +283,7 @@ func (l *Lexer) Tokenize() ([]Token, error) {
 	for l.position.Offset < uint32(len(l.Src)) {
 		ch, _ := l.getch()
 
-		if unicode.IsSpace(ch) {
+		if unicode.IsSpace(ch) && ch != '\n' {
 			l.skip_whitespace()
 		} else if ch == '"' {
 			token, err := l.tokenize_string_literal()

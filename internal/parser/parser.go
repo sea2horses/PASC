@@ -18,10 +18,7 @@ func (p *Parser) Parse() (ast.Node, []diagnostics.Diagnostic) {
 	p.position = 0
 	p.DiagnosticEmitter = diagnostics.NewDiagnosticEmitter()
 
-	program, err := p.parse_main_function()
-	if err != nil {
-		p.Report(p.currentSpan(), "%s", err)
-	}
+	program, _ := p.parse_main_function()
 
 	return program, slices.Clone(p.Diagnostics())
 }
@@ -131,17 +128,34 @@ func (p *Parser) until(predicate func(lexer.Token) bool) bool {
 		token, err = p.get()
 	}
 
-	return !p.eof() && !p.eol()
+	return !p.eof() && predicate(*token)
+}
+
+func (p *Parser) until_eof(predicate func(lexer.Token) bool) bool {
+	token, err := p.get()
+
+	for err == nil {
+		if predicate(*token) {
+			break
+		}
+
+		p.position++
+		token, err = p.get()
+	}
+
+	return !p.eof() && predicate(*token)
 }
 
 /* Skips to token, return true if token type was found */
 func (p *Parser) skip_to_token(token_type lexer.TokenType) bool {
+	diagnostics.Dbg("Skipping to token: ", token_type)
 	return p.until(
 		func(token lexer.Token) bool { return token.Type == token_type },
 	)
 }
 
 func (p *Parser) skip_to_keyword(keyword lexer.Keyword) bool {
+	diagnostics.Dbg("Skipping to keyword: ", keyword)
 	return p.until(
 		func(token lexer.Token) bool {
 			kw, ok := lexer.MapToKeyword([]rune(token.Value))
@@ -151,9 +165,21 @@ func (p *Parser) skip_to_keyword(keyword lexer.Keyword) bool {
 }
 
 func (p *Parser) skip_to_nextline() bool {
+	diagnostics.Dbg("Skipping to next line... Position: ", p.position)
 	ok := p.skip_to_token(lexer.NEWLINE)
 	p.eat_token(lexer.NEWLINE)
+	diagnostics.Dbg("Ok status:", ok)
+	diagnostics.Dbg("New position: ", p.position)
 	return ok
+}
+
+func (p *Parser) skip_newlines() bool {
+	diagnostics.Dbg("Skipping newlines...")
+	return p.until_eof(
+		func(token lexer.Token) bool {
+			return token.Type != lexer.NEWLINE
+		},
+	)
 }
 
 func (p *Parser) eat_token(token_type lexer.TokenType) (string, error) {
@@ -177,7 +203,7 @@ func (p *Parser) eat_token(token_type lexer.TokenType) (string, error) {
 func (p *Parser) eat_keyword(expected lexer.Keyword) (*lexer.Keyword, error) {
 	diagnostics.Dbg("Ate keyword: ", expected)
 	if p.eof() {
-		p.Report(p.currentSpan(), "%s", ErrUnexpectedEOF)
+		// p.Report(p.currentSpan(), "%s", ErrUnexpectedEOF)
 		return nil, ErrUnexpectedEOF
 	}
 

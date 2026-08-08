@@ -21,16 +21,20 @@ func (p *Parser) parse_statement_block(terminators ...lexer.Keyword) ([]ast.Stmt
 			break
 		}
 
+		p.skip_newlines()
 		stmt, err := p.parse_statement()
 
-		_, err = p.eat_token(lexer.NEWLINE)
-		if err != nil {
-			p.Report(p.currentSpan(), "expected newline after statement")
-			p.skip_to_nextline()
-		}
-
 		if stmt != nil {
+			diagnostics.Dbg("Statement was successful")
+			_, err = p.eat_token(lexer.NEWLINE)
+			if err != nil {
+				p.Report(p.currentSpan(), "expected newline after statement")
+			}
+
 			stmts = append(stmts, stmt)
+		} else {
+			p.Report(p.currentSpan(), "extraneous statement")
+			p.skip_to_nextline()
 		}
 	}
 	return stmts, nil

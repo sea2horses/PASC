@@ -1,6 +1,5 @@
 Algoritmo Vale
 	Definir x Como Entero
-	x = "Hello, World!"
 
 	Escribir "Dime tu edad!"
 	Leer x

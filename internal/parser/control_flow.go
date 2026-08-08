@@ -24,6 +24,7 @@ func (p *Parser) parse_if() (ast.Stmt, error) {
 	_, err = p.eat_token(lexer.NEWLINE)
 	if err != nil {
 		p.Report(p.currentSpan(), "expected newline")
+		p.skip_to_nextline()
 	}
 
 	info := p.infoFrom(start)
@@ -68,7 +69,7 @@ func (p *Parser) parse_else() (*ast.Else, error) {
 	info := p.infoFrom(start)
 
 	/* Parse if statement block */
-	stmts, err := p.parse_statement_block(lexer.SINO)
+	stmts, err := p.parse_statement_block(lexer.FINSI)
 	return &ast.Else{Stmts: stmts, NodeInfo: info}, nil
 }
 
