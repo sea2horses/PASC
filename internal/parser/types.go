@@ -27,6 +27,6 @@ func (p *Parser) parse_type() (*ast.TypeRef, error) {
 		}
 	}
 
-	p.report(tok.Span, string(ErrExpectedType))
+	p.Report(tok.Span, string(ErrExpectedType))
 	return nil, ErrExpectedType
 }

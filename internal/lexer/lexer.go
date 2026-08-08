@@ -1,56 +1,22 @@
 package lexer
 
 import (
-	"fmt"
 	"pseint-compiled/internal/diagnostics"
 	"pseint-compiled/internal/models"
 	"unicode"
 )
 
-/* DON'T TOUCH! */
-var NULL_TOKEN = Token{Type: EOF}
-
-type ErrOutOfBounds struct {
-	Max   uint32
-	Value uint32
-}
-
-func (e ErrOutOfBounds) Error() string {
-	return fmt.Sprintf("value %d is out of bounds (%d)", e.Value, e.Max)
-}
-
-type ErrUnexpectedChar struct {
-	Char rune
-}
-
-func (e ErrUnexpectedChar) Error() string {
-	return fmt.Sprintf("unexpected char: %c", e.Char)
-}
-
-type LexerErr string
-
-func (e LexerErr) Error() string {
-	return string(e)
-}
-
-const (
-	ErrExpectedIdentifier = LexerErr("expected identifier")
-	ErrExpectedString     = LexerErr("expected string")
-	ErrExpectedNumber     = LexerErr("expected number")
-	ErrUnterminatedString = LexerErr("unterminated string")
-)
-
 /* Lexer struct */
 type Lexer struct {
-	Src         []rune /* Loaded source code */
-	diagnostics []diagnostics.Diagnostic
-	position    models.Position
+	Src      []rune /* Loaded source code */
+	position models.Position
+	diagnostics.DiagnosticEmitter
 }
 
 func NewLexer(src []rune) *Lexer {
 	return &Lexer{
-		Src:         src,
-		diagnostics: []diagnostics.Diagnostic{},
+		Src:               src,
+		DiagnosticEmitter: diagnostics.NewDiagnosticEmitter(),
 		position: models.Position{
 			Line:   1,
 			Column: 1,
@@ -101,21 +67,6 @@ func (l *Lexer) emmit(token_type TokenType, value string, span models.Span) Toke
 	}
 }
 
-/* Emmit a diagnostic */
-func (l *Lexer) report(span models.Span, level diagnostics.DiagnosticLevel, msg string) {
-	d := diagnostics.Diagnostic{
-		Span:  span,
-		Level: level,
-		Msg:   msg,
-	}
-
-	l.diagnostics = append(l.diagnostics, d)
-}
-
-func (l *Lexer) Diagnostics() []diagnostics.Diagnostic {
-	return l.diagnostics
-}
-
 /* Skip Whitespace */
 func (l *Lexer) skip_whitespace() {
 	for {
@@ -154,9 +105,9 @@ func (l *Lexer) parse_identifier() (Token, error) {
 
 	/* If first char is NOT an identifier friendly character, throw an error */
 	if !unicode.IsLetter(init_ch) && init_ch != '_' {
-		l.report(
+		l.Report(
 			models.Span{Start: init_position, End: init_position},
-			diagnostics.ERROR,
+			"%s",
 			ErrExpectedIdentifier.Error(),
 		)
 
@@ -214,9 +165,9 @@ func (l *Lexer) parse_string_literal() (Token, error) {
 	end_ch, err := l.at(end_position.Offset)
 
 	if err != nil {
-		l.report(
+		l.Report(
 			models.Span{Start: init_position, End: init_position},
-			diagnostics.ERROR,
+			"%s",
 			ErrUnterminatedString.Error(),
 		)
 
@@ -228,9 +179,9 @@ func (l *Lexer) parse_string_literal() (Token, error) {
 
 	/* Check that both ends of our string are good */
 	if init_ch != '"' {
-		l.report(
+		l.Report(
 			models.Span{Start: init_position, End: init_position},
-			diagnostics.ERROR,
+			"%s",
 			ErrExpectedString.Error(),
 		)
 
@@ -238,9 +189,9 @@ func (l *Lexer) parse_string_literal() (Token, error) {
 	}
 
 	if end_ch != '"' {
-		l.report(
+		l.Report(
 			models.Span{Start: init_position, End: init_position},
-			diagnostics.ERROR,
+			"%s",
 			ErrUnterminatedString.Error(),
 		)
 
@@ -283,9 +234,9 @@ func (l *Lexer) parse_number_literal() (Token, error) {
 	_, ok := MapToNumber(value)
 
 	if !ok {
-		l.report(
+		l.Report(
 			models.Span{Start: init_position, End: end_position},
-			diagnostics.ERROR,
+			"%s",
 			ErrExpectedNumber.Error(),
 		)
 
@@ -310,9 +261,9 @@ func (l *Lexer) parse_char() (Token, error) {
 
 	tk_type, ok := charMap[ch]
 	if !ok {
-		l.report(
+		l.Report(
 			models.Span{Start: capture_position, End: capture_position},
-			diagnostics.ERROR,
+			"%s",
 			ErrUnexpectedChar{Char: ch}.Error(),
 		)
 

@@ -47,6 +47,9 @@ type Token struct {
 	Span  models.Span /* Span of the token */
 }
 
+/* DON'T TOUCH! */
+var NULL_TOKEN = Token{Type: EOF}
+
 var charMap map[rune]TokenType = map[rune]TokenType{
 	'.': DOT,
 	',': COMMA,

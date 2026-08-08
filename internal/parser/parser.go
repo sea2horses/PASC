@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"pseint-compiled/internal/ast"
 	"pseint-compiled/internal/diagnostics"
 	"pseint-compiled/internal/lexer"
@@ -10,21 +9,21 @@ import (
 )
 
 type Parser struct {
-	Tokens      []lexer.Token
-	diagnostics []diagnostics.Diagnostic
-	position    uint32
+	Tokens   []lexer.Token
+	position uint32
+	diagnostics.DiagnosticEmitter
 }
 
 func (p *Parser) Parse() (ast.Node, []diagnostics.Diagnostic) {
 	p.position = 0
-	p.diagnostics = nil
+	p.DiagnosticEmitter = diagnostics.NewDiagnosticEmitter()
 
 	program, err := p.parse_main_function()
 	if err != nil {
-		p.report(p.currentSpan(), "%s", err)
+		p.Report(p.currentSpan(), "%s", err)
 	}
 
-	return program, slices.Clone(p.diagnostics)
+	return program, slices.Clone(p.Diagnostics())
 }
 
 func (p *Parser) LastAt() (*lexer.Token, error) {
@@ -51,27 +50,6 @@ func (p *Parser) currentSpan() models.Span {
 		Start: last.End,
 		End:   last.End,
 	}
-}
-
-func (p *Parser) diagnosis(span models.Span, level diagnostics.DiagnosticLevel, format string, args ...any) {
-	diagnostics.Dbg("Filing diagnosis of type: ", level, ". span: ", span)
-	p.diagnostics = append(p.diagnostics, diagnostics.Diagnostic{
-		Span:  span,
-		Msg:   fmt.Sprintf(format, args...),
-		Level: level,
-	})
-}
-
-func (p *Parser) report(span models.Span, format string, args ...any) {
-	p.diagnosis(span, diagnostics.ERROR, format, args...)
-}
-
-func (p *Parser) warn(span models.Span, format string, args ...any) {
-	p.diagnosis(span, diagnostics.WARNING, format, args...)
-}
-
-func (p *Parser) info(span models.Span, format string, args ...any) {
-	p.diagnosis(span, diagnostics.INFO, format, args...)
 }
 
 func (p *Parser) at(position uint32) (*lexer.Token, error) {
