@@ -23,6 +23,13 @@ const (
 	SINO
 	FINSI
 
+	// Switch
+	SEGUN
+	FINSEGUN
+	DE
+	OTRO
+	MODO
+
 	// Declaracion / Tipos
 	DEFINIR
 	COMO
@@ -66,4 +73,9 @@ var keywordMap map[string]Keyword = map[string]Keyword{
 	"real":         REAL,
 	"borrar":       BORRAR,
 	"pantalla":     PANTALLA,
+	"segun":        SEGUN,
+	"finsegun":     FINSEGUN,
+	"de":           DE,
+	"otro":         OTRO,
+	"modo":         MODO,
 }

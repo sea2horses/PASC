@@ -147,6 +147,25 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 		cg.write("{")
 		cg.write_statement_block(n.Stmts)
 		cg.write("}")
+	case *tast.Case:
+		cg.write("case ")
+		cg.write_node(n.Value)
+		cg.write(": {\n")
+		cg.write_statement_block(n.Stmts)
+		cg.write("}\n")
+	case *tast.Switch:
+		cg.write("switch ")
+		cg.write_node(n.Base)
+		cg.write(" {\n")
+		for _, c := range n.Cases {
+			cg.write_node(c)
+		}
+		if n.Default != nil {
+			cg.write("default: {\n")
+			cg.write_statement_block(n.Default)
+			cg.write("}\n")
+		}
+		cg.write("}\n")
 	case *tast.ClearScreen:
 		cg.write("%s()", ClearFn)
 	case *tast.MainFunction:

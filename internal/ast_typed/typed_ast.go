@@ -169,6 +169,19 @@ type While struct {
 	Stmts     []Stmt
 }
 
+type Case struct {
+	ast.NodeInfo
+	Value TypedExpr
+	Stmts []Stmt
+}
+
+type Switch struct {
+	ast.NodeInfo
+	Base    TypedExpr
+	Cases   []*Case
+	Default []Stmt
+}
+
 type Write struct {
 	ast.NodeInfo
 	Content []TypedExpr

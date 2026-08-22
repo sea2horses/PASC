@@ -11,6 +11,7 @@ func (p *Parser) parse_statement_block(terminators ...lexer.Keyword) ([]ast.Stmt
 	diagnostics.Dbg("Parsing statement block...")
 	var stmts []ast.Stmt
 	for {
+		p.skip_newlines()
 		if p.eof() {
 			break
 		}
@@ -21,7 +22,6 @@ func (p *Parser) parse_statement_block(terminators ...lexer.Keyword) ([]ast.Stmt
 			break
 		}
 
-		p.skip_newlines()
 		stmt, err := p.parse_statement()
 
 		if stmt != nil {
@@ -52,7 +52,9 @@ func (p *Parser) parse_statement() (ast.Stmt, error) {
 	switch token.Type {
 	case lexer.KEYWORD:
 		return p.parse_keyword()
-	case lexer.IDENTIFIER:
+	case lexer.IDENTIFIER, lexer.STRING_LITERAL, lexer.NUMBER_LITERAL,
+		lexer.BOOLEAN_LITERAL, lexer.L_PARENTHESES, lexer.PLUS, lexer.MINUS,
+		lexer.EX_MARK:
 		return p.parse_expression_statement()
 	}
 
@@ -61,7 +63,7 @@ func (p *Parser) parse_statement() (ast.Stmt, error) {
 
 func (p *Parser) parse_main_function() (*ast.MainFunction, error) {
 	diagnostics.Dbg("Parsing main functions...")
-	start, checkpoint := p.snapshot()
+	start, checkpoint := p.PositionSnapshot()
 
 	var err error
 	var fn_name string
@@ -110,7 +112,7 @@ func (p *Parser) parse_main_function() (*ast.MainFunction, error) {
 
 /* Can either be a function call or an assignment */
 func (p *Parser) parse_expression_statement() (ast.Stmt, error) {
-	start, checkpoint := p.snapshot()
+	start, checkpoint := p.PositionSnapshot()
 
 	/* LHS */
 	target, err := p.parse_expression()
@@ -164,6 +166,8 @@ func (p *Parser) parse_keyword() (ast.Stmt, error) {
 		return p.parse_if()
 	case lexer.MIENTRAS:
 		return p.parse_while()
+	case lexer.SEGUN:
+		return p.parse_switch()
 	case lexer.BORRAR:
 		return p.parse_clear_screen()
 	}
@@ -172,7 +176,7 @@ func (p *Parser) parse_keyword() (ast.Stmt, error) {
 }
 
 func (p *Parser) parse_declaration() (ast.Stmt, error) {
-	start, checkpoint := p.snapshot()
+	start, checkpoint := p.PositionSnapshot()
 	/* GO */
 	_, err := p.eat_keyword(lexer.DEFINIR)
 	if err != nil {

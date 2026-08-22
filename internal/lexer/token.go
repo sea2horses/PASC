@@ -22,6 +22,7 @@ const (
 	R_PARENTHESES // )
 	L_BRACKET     // [
 	R_BRACKET     // ]
+	COLON         // :
 
 	// Binary Operators
 	// Arithmetic
@@ -68,5 +69,6 @@ var charMap map[rune]TokenType = map[rune]TokenType{
 	'!':  EX_MARK,
 	'[':  L_BRACKET,
 	']':  R_BRACKET,
+	':':  COLON,
 	'\n': NEWLINE,
 }

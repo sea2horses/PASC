@@ -55,3 +55,45 @@ func (a *Analyzer) analyze_while(while *ast.While) *tast.While {
 		Stmts:     stmts,
 	}
 }
+
+func (a *Analyzer) analyze_switch(s *ast.Switch) *tast.Switch {
+	diagnostics.Dbg("Analyzing switch...")
+
+	typed_base := a.analyze_expression(s.Base)
+	if semantic.IsInvalid(typed_base.Type()) {
+		diagnostics.Dbg("Invalid base type")
+	}
+
+	cases := make([]*tast.Case, 0, len(s.Cases))
+	for _, c := range s.Cases {
+		typed_value := a.analyze_expression(c.Clause)
+		/* Check that type is comparable */
+		if !semantic.EqualTypes(typed_base.Type(), typed_value.Type()) {
+			var ok bool
+			typed_value, ok = tryConvert(typed_value, typed_base.Type())
+			if !ok || typed_value == nil {
+				a.Report(typed_value.NodeSpan(), "expression of type %s cannot be assigned to %s", typed_value.Type(), typed_base.Type())
+				continue
+			}
+		}
+
+		typed_stmts := a.analyze_statement_block(c.Stmts)
+		cases = append(cases, &tast.Case{
+			NodeInfo: c.NodeInfo,
+			Value:    typed_value,
+			Stmts:    typed_stmts,
+		})
+	}
+
+	/* Parse default */
+	default_stmts := make([]tast.Stmt, 0, len(s.Default))
+	for _, d := range s.Default {
+		default_stmts = append(default_stmts, a.analyze_statement(d)...)
+	}
+
+	return &tast.Switch{
+		NodeInfo: s.NodeInfo,
+		Base:     typed_base,
+		Cases:    cases,
+	}
+}

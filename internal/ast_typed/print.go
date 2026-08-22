@@ -100,11 +100,53 @@ func (p *treePrinter) printStmt(stmt Stmt, depth int) {
 	case *While:
 		p.printWhile(stmt, depth)
 
+	case Switch:
+		p.printSwitch(&stmt, depth)
+
+	case *Switch:
+		p.printSwitch(stmt, depth)
+
+	case Case:
+		p.printCase(&stmt, depth)
+
+	case *Case:
+		p.printCase(stmt, depth)
+
 	case Write:
 		p.printWrite(&stmt, depth)
 
 	case *Write:
 		p.printWrite(stmt, depth)
+
+	case Read:
+		p.printRead(&stmt, depth)
+
+	case *Read:
+		p.printRead(stmt, depth)
+
+	case If:
+		p.printIf(&stmt, depth)
+
+	case *If:
+		p.printIf(stmt, depth)
+
+	case Else:
+		p.printElse(&stmt, depth)
+
+	case *Else:
+		p.printElse(stmt, depth)
+
+	case ClearScreen:
+		p.printClearScreen(&stmt, depth)
+
+	case *ClearScreen:
+		p.printClearScreen(stmt, depth)
+
+	case Declaration:
+		p.printDeclaration(&stmt, depth)
+
+	case *Declaration:
+		p.printDeclaration(stmt, depth)
 
 	case MainFunction:
 		p.printMainFunction(&stmt, depth)
@@ -117,6 +159,19 @@ func (p *treePrinter) printStmt(stmt Stmt, depth int) {
 	}
 }
 
+func (p *treePrinter) printStatements(label string, statements []Stmt, depth int) {
+	if len(statements) == 0 {
+		p.line(depth, "%s: <empty>", label)
+		return
+	}
+
+	p.line(depth, "%s:", label)
+	for index, statement := range statements {
+		p.line(depth+1, "[%d]", index)
+		p.printStmt(statement, depth+2)
+	}
+}
+
 func (p *treePrinter) printAssignment(assignment *Assignment, depth int) {
 	if assignment == nil {
 		p.line(depth, "<nil Assignment>")
@@ -125,7 +180,8 @@ func (p *treePrinter) printAssignment(assignment *Assignment, depth int) {
 
 	p.line(
 		depth,
-		"Assignment span=%s",
+		"Assignment declarative=%t span=%s",
+		assignment.Declarative,
 		formatSpan(assignment.NodeSpan()),
 	)
 
@@ -134,6 +190,25 @@ func (p *treePrinter) printAssignment(assignment *Assignment, depth int) {
 
 	p.line(depth+1, "Value:")
 	p.printExpr(assignment.Value, depth+2)
+}
+
+func (p *treePrinter) printDeclaration(declaration *Declaration, depth int) {
+	if declaration == nil {
+		p.line(depth, "<nil Declaration>")
+		return
+	}
+
+	p.line(depth, "Declaration type=%s span=%s", formatType(declaration.Type), formatSpan(declaration.NodeSpan()))
+	if declaration.Symbol == nil {
+		p.line(depth+1, "Symbol: <nil>")
+		return
+	}
+
+	p.line(depth+1, "Symbol:")
+	p.line(depth+2, "Name: %q", declaration.Symbol.Name)
+	p.line(depth+2, "Kind: %s", formatSymbolKind(declaration.Symbol.Kind))
+	p.line(depth+2, "Mutable: %t", declaration.Symbol.Mutable)
+	p.line(depth+2, "Declared: %s", formatSpan(declaration.Symbol.Declared))
 }
 
 func (p *treePrinter) printWhile(stmt *While, depth int) {
@@ -164,6 +239,41 @@ func (p *treePrinter) printWhile(stmt *While, depth int) {
 	}
 }
 
+func (p *treePrinter) printSwitch(stmt *Switch, depth int) {
+	if stmt == nil {
+		p.line(depth, "<nil Switch>")
+		return
+	}
+
+	p.line(depth, "Switch span=%s", formatSpan(stmt.NodeSpan()))
+	p.line(depth+1, "Base:")
+	p.printExpr(stmt.Base, depth+2)
+
+	if len(stmt.Cases) == 0 {
+		p.line(depth+1, "Cases: <empty>")
+	} else {
+		p.line(depth+1, "Cases:")
+		for index, item := range stmt.Cases {
+			p.line(depth+2, "[%d]", index)
+			p.printCase(item, depth+3)
+		}
+	}
+
+	p.printStatements("Default", stmt.Default, depth+1)
+}
+
+func (p *treePrinter) printCase(stmt *Case, depth int) {
+	if stmt == nil {
+		p.line(depth, "<nil Case>")
+		return
+	}
+
+	p.line(depth, "Case span=%s", formatSpan(stmt.NodeSpan()))
+	p.line(depth+1, "Value:")
+	p.printExpr(stmt.Value, depth+2)
+	p.printStatements("Body", stmt.Stmts, depth+1)
+}
+
 func (p *treePrinter) printWrite(stmt *Write, depth int) {
 	if stmt == nil {
 		p.line(depth, "<nil Write>")
@@ -187,6 +297,56 @@ func (p *treePrinter) printWrite(stmt *Write, depth int) {
 		p.line(depth+2, "[%d]", index)
 		p.printExpr(expression, depth+3)
 	}
+}
+
+func (p *treePrinter) printRead(stmt *Read, depth int) {
+	if stmt == nil {
+		p.line(depth, "<nil Read>")
+		return
+	}
+
+	p.line(depth, "Read span=%s", formatSpan(stmt.NodeSpan()))
+	p.line(depth+1, "Into:")
+	p.printLValue(stmt.Into, depth+2)
+}
+
+func (p *treePrinter) printIf(stmt *If, depth int) {
+	if stmt == nil {
+		p.line(depth, "<nil If>")
+		return
+	}
+
+	p.line(depth, "If span=%s", formatSpan(stmt.NodeSpan()))
+	p.line(depth+1, "Condition:")
+	p.printExpr(stmt.Condition, depth+2)
+	p.printStatements("Then", stmt.Stmts, depth+1)
+
+	if stmt.Else == nil {
+		p.line(depth+1, "Else: <none>")
+		return
+	}
+
+	p.line(depth+1, "Else:")
+	p.printElse(stmt.Else, depth+2)
+}
+
+func (p *treePrinter) printElse(stmt *Else, depth int) {
+	if stmt == nil {
+		p.line(depth, "<nil Else>")
+		return
+	}
+
+	p.line(depth, "Else span=%s", formatSpan(stmt.NodeSpan()))
+	p.printStatements("Body", stmt.Stmts, depth+1)
+}
+
+func (p *treePrinter) printClearScreen(stmt *ClearScreen, depth int) {
+	if stmt == nil {
+		p.line(depth, "<nil ClearScreen>")
+		return
+	}
+
+	p.line(depth, "ClearScreen span=%s", formatSpan(stmt.NodeSpan()))
 }
 
 // -----------------------------------------------------------------------------
@@ -263,6 +423,9 @@ func (p *treePrinter) printExpr(expression TypedExpr, depth int) {
 
 	case *Cast:
 		p.printCast(expression, depth)
+
+	case Cast:
+		p.printCast(&expression, depth)
 
 	default:
 		p.line(
@@ -356,8 +519,7 @@ func (p *treePrinter) printVariableExpr(
 	if expression.Symbol == nil {
 		p.line(
 			depth,
-			"VariableExpr symbol=<nil> type=%s span=%s",
-			formatType(expression.Type()),
+			"VariableExpr symbol=<nil> type=<nil> span=%s",
 			formatSpan(expression.NodeSpan()),
 		)
 		return

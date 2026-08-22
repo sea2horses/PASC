@@ -52,7 +52,7 @@ func (p *Parser) parse_primary() (ast.Expr, error) {
 		}
 		return &ast.NumberLiteral{Int: num, Frac: frac, NodeInfo: p.infoFrom(start)}, nil
 	case lexer.BOOLEAN_LITERAL:
-		val, _ := p.eat_token(lexer.NUMBER_LITERAL)
+		val, _ := p.eat_token(lexer.BOOLEAN_LITERAL)
 		vbool, _ := lexer.MapToBool([]rune(val))
 		return &ast.BoolLiteral{Value: vbool, NodeInfo: p.infoFrom(start)}, nil
 	case lexer.IDENTIFIER:

@@ -43,7 +43,10 @@ func (a *Analyzer) analyze_statement(stmt ast.Stmt) []tast.Stmt {
 		return []tast.Stmt{a.analyze_declaration(s)}
 	case *ast.ClearScreen:
 		return []tast.Stmt{a.analyze_clear_screen(s)}
+	case *ast.Switch:
+		return []tast.Stmt{a.analyze_switch(s)}
 	}
 
+	a.Report(stmt.NodeSpan(), "extraneous statement")
 	return nil
 }

@@ -24,6 +24,11 @@ type DiagnosticEmitter struct {
 	DiagnosticInfo
 }
 
+func (d *DiagnosticEmitter) snapshot() DiagnosticEmitter {
+	clone := *d
+	return clone
+}
+
 func (d *DiagnosticEmitter) diagnosis(span models.Span, level DiagnosticLevel, format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	Dbg("Filing diagnosis of type: ", level, ". span: ", span, ". with message: ", msg)

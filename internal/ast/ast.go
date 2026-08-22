@@ -219,6 +219,51 @@ func (w While) String() string {
 	return builder.String()
 }
 
+type Switch struct {
+	NodeInfo
+	Base    Expr
+	Cases   []*Case
+	Default []Stmt
+}
+
+func (s Switch) String() string {
+	var builder strings.Builder
+
+	builder.WriteString(fmt.Sprintf("Switch '%s': {\n", s.Base))
+	for _, c := range s.Cases {
+		builder.WriteString(c.String() + "\n")
+	}
+
+	if s.Default != nil {
+		builder.WriteString(fmt.Sprintf("Default: {\n"))
+		for _, stmt := range s.Default {
+			builder.WriteString(stmt.String() + "\n")
+		}
+		builder.WriteString("}")
+	}
+	builder.WriteString("}")
+
+	return builder.String()
+}
+
+type Case struct {
+	NodeInfo
+	Clause Expr
+	Stmts  []Stmt
+}
+
+func (c Case) String() string {
+	var builder strings.Builder
+
+	builder.WriteString(fmt.Sprintf("Case '%s': {\n", c.Clause))
+	for _, stmt := range c.Stmts {
+		builder.WriteString(stmt.String() + "\n")
+	}
+	builder.WriteString("}")
+
+	return builder.String()
+}
+
 type MainFunction struct {
 	NodeInfo
 	Name  string

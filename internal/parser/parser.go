@@ -23,6 +23,15 @@ func (p *Parser) Parse() (ast.Node, []diagnostics.Diagnostic) {
 	return program, slices.Clone(p.Diagnostics())
 }
 
+func (p *Parser) snapshot() Parser {
+	clone := *p
+	return clone
+}
+
+func (p *Parser) returnToSnapshot(snapshot Parser) {
+	*p = snapshot
+}
+
 func (p *Parser) eof() bool {
 	return p.position >= uint32(len(p.Tokens))
 }
@@ -67,7 +76,7 @@ func (p *Parser) mark() uint32 {
 	return p.position
 }
 
-func (p *Parser) snapshot() (uint32, diagnostics.DiagnosticInfo) {
+func (p *Parser) PositionSnapshot() (uint32, diagnostics.DiagnosticInfo) {
 	return p.mark(), p.Checkpoint()
 }
 
