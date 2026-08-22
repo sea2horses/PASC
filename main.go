@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"pseint-compiled/internal/analyzer"
 	"pseint-compiled/internal/ast"
 	tast "pseint-compiled/internal/ast_typed"
@@ -14,6 +15,7 @@ import (
 	"pseint-compiled/internal/generator"
 	"pseint-compiled/internal/lexer"
 	"pseint-compiled/internal/parser"
+	"runtime"
 )
 
 var (
@@ -21,11 +23,10 @@ var (
 	filename string
 )
 
-/* TODO: Add .exe at the end for Windows */
 const (
 	PROGRAM_NAME = "Pseint Compiler"
 	VERSION      = "Indev"
-	OUTPUT       = "./build/"
+	OUTPUT       = "build"
 	CG_FILENAME  = "out.go"
 )
 
@@ -161,8 +162,12 @@ func run() error {
 	diagnostics.Dbg("Generated data\n", string(data))
 
 	// Code path
-	code_path := OUTPUT + CG_FILENAME
-	out_path := OUTPUT + "out"
+	code_path := filepath.Join(OUTPUT, CG_FILENAME)
+	executable_name := "out"
+	if runtime.GOOS == "windows" {
+		executable_name += ".exe"
+	}
+	out_path := filepath.Join(OUTPUT, executable_name)
 
 	if err = os.MkdirAll(OUTPUT, 0755); err != nil {
 		return err
@@ -173,14 +178,7 @@ func run() error {
 		return err
 	}
 
-	cmd := exec.Command(
-		"bash",
-		"-c",
-		"go build -o \"$1\" \"$2\"",
-		"bash",
-		out_path,
-		code_path,
-	)
+	cmd := exec.Command("go", "build", "-o", out_path, code_path)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
