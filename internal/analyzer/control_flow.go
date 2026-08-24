@@ -95,5 +95,6 @@ func (a *Analyzer) analyze_switch(s *ast.Switch) *tast.Switch {
 		NodeInfo: s.NodeInfo,
 		Base:     typed_base,
 		Cases:    cases,
+		Default:  default_stmts,
 	}
 }

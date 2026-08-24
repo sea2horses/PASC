@@ -9,5 +9,7 @@ Algoritmo TestSegun
             Escribir "Caso 2"
         3:
             Escribir "Caso 3"
+        De Otro Modo:
+            Escribir "Otro caso"
     FinSegun
 FinAlgoritmo
