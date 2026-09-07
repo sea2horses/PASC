@@ -149,6 +149,24 @@ func (a Assignment) String() string {
 	return fmt.Sprintf("%s = %s", a.Target, a.Content)
 }
 
+type Dimension struct {
+	NodeInfo
+	Name       string
+	Dimensions []Expr
+}
+
+func (d Dimension) String() string {
+	var builder strings.Builder
+
+	fmt.Fprintf(&builder, "Dimension %s [", d.Name)
+	for _, dim := range d.Dimensions {
+		builder.WriteString(dim.String())
+	}
+	builder.WriteRune(']')
+
+	return builder.String()
+}
+
 type Write struct {
 	NodeInfo
 	Print []Expr
