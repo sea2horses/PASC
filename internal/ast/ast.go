@@ -114,6 +114,11 @@ func (bo BinaryOperation) String() string {
 	return fmt.Sprintf("(%s %s %s)", bo.LHS, bo.Op, bo.RHS)
 }
 
+type Index struct {
+	NodeInfo
+	Index Expr
+}
+
 /* Expression as Statement */
 type ExprStmt struct {
 	NodeInfo
