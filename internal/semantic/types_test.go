@@ -49,7 +49,7 @@ func TestInvalid(t *testing.T) {
 }
 
 func TestArrays(t *testing.T) {
-	arrayType := semantic.ArrayType{}
+	arrayType := semantic.ArrayType{Elem: semantic.IntegerType{}}
 
 	if !semantic.IsArray(arrayType) {
 		t.Errorf("expected arrayType to be an array type")

@@ -105,5 +105,5 @@ func IsGeneric(t Type) bool {
 }
 
 func IsArray(t Type) bool {
-	return EqualTopLevelType(t, ArrayType{})
+	return EqualTopLevelType(t, ArrayType{Elem: VoidType{}})
 }
