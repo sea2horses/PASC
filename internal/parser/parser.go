@@ -46,6 +46,15 @@ func (p *Parser) eol() bool {
 	return tok.Type == lexer.NEWLINE
 }
 
+func (p *Parser) check(tok lexer.TokenType) bool {
+	if p.eof() {
+		return false
+	}
+
+	ntok, _ := p.get()
+	return tok == ntok.Type
+}
+
 func (p *Parser) currentSpan() models.Span {
 	if token, err := p.get(); err == nil {
 		return token.Span

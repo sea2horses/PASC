@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"pseint-compiled/internal/ast"
 	"pseint-compiled/internal/diagnostics"
 	"pseint-compiled/internal/lexer"
@@ -23,6 +24,20 @@ func (p *Parser) parse_operand() (ast.Expr, error) {
 }
 
 func (p *Parser) parse_primary() (ast.Expr, error) {
+	expr, err := p.parse_atom()
+	if err != nil {
+		return nil, err
+	}
+
+	expr = p.parse_post(expr)
+	if expr == nil {
+		return nil, errors.New("invalid postfix expression")
+	}
+
+	return expr, nil
+}
+
+func (p *Parser) parse_atom() (ast.Expr, error) {
 	diagnostics.Dbg("Parsing primary!")
 	token, err := p.get()
 	if err != nil {

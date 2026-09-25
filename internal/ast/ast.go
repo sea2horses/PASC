@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"pseint-compiled/internal/models"
 	"pseint-compiled/internal/operators"
+	"pseint-compiled/internal/utils"
 	"strings"
 )
 
@@ -116,7 +117,14 @@ func (bo BinaryOperation) String() string {
 
 type Index struct {
 	NodeInfo
-	Index Expr
+	Indexes []Expr
+	Target  Expr
+}
+
+func (i Index) String() string {
+	return fmt.Sprintf("%s[%s]", i.Target, strings.Join(utils.Map(i.Indexes, func(e Expr) string {
+		return e.String()
+	}), ", "))
 }
 
 /* Expression as Statement */
@@ -283,6 +291,27 @@ func (c Case) String() string {
 		builder.WriteString(stmt.String() + "\n")
 	}
 	builder.WriteString("}")
+
+	return builder.String()
+}
+
+type Call struct {
+	NodeInfo
+	Callable  Expr
+	Arguments []Expr
+}
+
+func (c Call) String() string {
+	var builder strings.Builder
+
+	builder.WriteString(fmt.Sprintf("Call '%s': (\n", c.Callable))
+
+	args := utils.Map(c.Arguments, func(a Expr) string {
+		return a.String()
+	})
+
+	builder.WriteString(strings.Join(args, ", "))
+	builder.WriteString(")")
 
 	return builder.String()
 }
