@@ -52,7 +52,7 @@ func (a *Analyzer) analyze_declaration(decl *ast.Declaration) *tast.Declaration 
 	symbol := &semantic.Symbol{
 		Name:     decl.Name,
 		Kind:     semantic.SymbolVariable,
-		Type:     *t,
+		Type:     t,
 		Declared: decl.Span,
 		Mutable:  true,
 	}
@@ -62,7 +62,7 @@ func (a *Analyzer) analyze_declaration(decl *ast.Declaration) *tast.Declaration 
 	return &tast.Declaration{
 		NodeInfo: decl.NodeInfo,
 		Symbol:   symbol,
-		Type:     *t,
+		Type:     t,
 	}
 }
 

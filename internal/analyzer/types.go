@@ -6,7 +6,7 @@ import (
 	"pseint-compiled/internal/semantic"
 )
 
-func (a *Analyzer) analyze_type_ref(typeref *ast.TypeRef) *semantic.Type {
+func (a *Analyzer) analyze_type_ref(typeref *ast.TypeRef) semantic.Type {
 	return a.type_table.Get(typeref.Name)
 }
 

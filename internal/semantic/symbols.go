@@ -68,7 +68,8 @@ func (s *Scope) Lookup(name string) (*Symbol, bool) {
 }
 
 type TypeTable struct {
-	table map[string]Type
+	table      map[string]Type
+	inferences int
 }
 
 var default_table map[string]Type = map[string]Type{
@@ -84,10 +85,18 @@ func NewTypeTable() *TypeTable {
 	}
 }
 
-func (s *TypeTable) Get(name string) *Type {
+func (s *TypeTable) MakeInference() Type {
+	s.inferences++
+	return &InferType{
+		ID:       s.inferences,
+		Resolved: nil,
+	}
+}
+
+func (s *TypeTable) Get(name string) Type {
 	t, ok := s.table[NormalizeName(name)]
 	if !ok {
 		return nil
 	}
-	return &t
+	return t
 }

@@ -187,6 +187,19 @@ type Write struct {
 	Content []TypedExpr
 }
 
+type Index struct {
+	ast.NodeInfo
+	Target       TypedExpr
+	Indexes      []TypedExpr
+	ResolvedType semantic.Type
+}
+
+type Dimension struct {
+	ast.NodeInfo
+	Symbol     *semantic.Symbol
+	Dimensions []TypedExpr
+}
+
 /* Although multiple semantically, in the TAST reads are treated as individual */
 type Read struct {
 	ast.NodeInfo
