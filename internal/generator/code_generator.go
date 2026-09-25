@@ -19,10 +19,10 @@ var conversionMap map[semantic.ConversionKind]string = map[semantic.ConversionKi
 }
 
 var typeMap map[semantic.Type]string = map[semantic.Type]string{
-	semantic.IntegerType: "int64",
-	semantic.StringType:  "string",
-	semantic.BooleanType: "bool",
-	semantic.RealType:    "float64",
+	semantic.IntegerType{}: "int64",
+	semantic.StringType{}:  "string",
+	semantic.BooleanType{}: "bool",
+	semantic.RealType{}:    "float64",
 }
 
 const (

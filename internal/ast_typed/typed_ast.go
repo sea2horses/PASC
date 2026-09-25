@@ -42,7 +42,7 @@ type ErrorExpr struct {
 func (ErrorExpr) exprNode() {}
 
 func (ErrorExpr) Type() semantic.Type {
-	return semantic.InvalidType
+	return semantic.InvalidType{}
 }
 
 type StringLiteral struct {
@@ -53,7 +53,7 @@ type StringLiteral struct {
 func (*StringLiteral) exprNode() {}
 
 func (*StringLiteral) Type() semantic.Type {
-	return semantic.PrimitiveType{Kind: semantic.STRING}
+	return semantic.StringType{}
 }
 
 type NumberLiteral struct {
@@ -67,7 +67,7 @@ func (*NumberLiteral) exprNode() {}
 /* ALL number literals are real by default */
 /* TODO: Add warning to round any operation when assigning to an integer variable */
 func (nl *NumberLiteral) Type() semantic.Type {
-	return semantic.PrimitiveType{Kind: semantic.REAL}
+	return semantic.RealType{}
 }
 
 type BooleanLiteral struct {
@@ -78,7 +78,7 @@ type BooleanLiteral struct {
 func (BooleanLiteral) exprNode() {}
 
 func (BooleanLiteral) Type() semantic.Type {
-	return semantic.PrimitiveType{Kind: semantic.BOOLEAN}
+	return semantic.BooleanType{}
 }
 
 type VariableExpr struct {
