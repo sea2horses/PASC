@@ -80,47 +80,6 @@ func (p *Parser) parse_else() (*ast.Else, error) {
 	return &ast.Else{Stmts: stmts, NodeInfo: info}, nil
 }
 
-func (p *Parser) parse_while() (ast.Stmt, error) {
-	diagnostics.Dbg("Parsing while...")
-	start, checkpoint := p.PositionSnapshot()
-	_, err := p.eat_keyword(lexer.MIENTRAS)
-	if err != nil {
-		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.MIENTRAS})
-	}
-
-	condition, err := p.parse_expression()
-	if err != nil {
-		p.skip_to_keyword(lexer.HACER)
-	}
-
-	/* TODO: Make it a language option for optional 'Hacer' */
-	_, err = p.eat_keyword(lexer.HACER)
-	if err != nil {
-		p.Warn(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.HACER})
-	}
-
-	_, err = p.eat_token(lexer.NEWLINE)
-	if err != nil {
-		p.Report(p.currentSpan(), "expected newline")
-	}
-
-	info := p.infoFrom(start)
-
-	stmts, err := p.parse_statement_block(lexer.FINMIENTRAS)
-
-	_, err = p.eat_keyword(lexer.FINMIENTRAS)
-	if err != nil {
-		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.FINMIENTRAS})
-		p.Info(info.Span, "declared here")
-	}
-
-	if p.AnyErrorSince(checkpoint) {
-		return nil, ErrInvalidStatement
-	}
-
-	return &ast.While{Condition: condition, Stmts: stmts, NodeInfo: info}, nil
-}
-
 func (p *Parser) parse_switch() (ast.Stmt, error) {
 	diagnostics.Dbg("Parsing switch...")
 	start, checkpoint := p.PositionSnapshot()

@@ -250,6 +250,33 @@ func (w While) String() string {
 	return builder.String()
 }
 
+type For struct {
+	NodeInfo
+	Start *Assignment
+	Until Expr
+	Step  Expr
+	Stmts []Stmt
+}
+
+func (f For) String() string {
+	var builder strings.Builder
+
+	builder.WriteString(fmt.Sprintf("For %s -> %s", f.Start, f.Until))
+	if f.Step != nil {
+		builder.WriteString(fmt.Sprintf(" wth step %s", f.Step))
+	}
+	builder.WriteString(" {")
+
+	for _, s := range f.Stmts {
+		builder.WriteRune('\n')
+		builder.WriteString(s.String())
+	}
+	builder.WriteRune('\n')
+	builder.WriteString("}")
+
+	return builder.String()
+}
+
 type Switch struct {
 	NodeInfo
 	Base    Expr

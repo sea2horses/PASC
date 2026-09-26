@@ -206,6 +206,16 @@ type While struct {
 	Stmts     []Stmt
 }
 
+/* PSEINT Restriction: not any lvalue can be used for a for, only a variable one */
+type For struct {
+	ast.NodeInfo
+	Var   *VariableExpr
+	Start TypedExpr
+	Until TypedExpr
+	Step  TypedExpr
+	Stmts []Stmt
+}
+
 type Case struct {
 	ast.NodeInfo
 	Value TypedExpr

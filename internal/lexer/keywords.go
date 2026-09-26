@@ -46,6 +46,12 @@ const (
 	HACER
 	FINMIENTRAS
 
+	PARA
+	HASTA
+	CON
+	PASO
+	FINPARA
+
 	// Extra
 	BORRAR
 	PANTALLA
@@ -84,4 +90,9 @@ var keywordMap map[string]Keyword = map[string]Keyword{
 	"modo":          MODO,
 	"dimensionar":   DIMENSIONAR,
 	"redimensionar": REDIMENSIONAR,
+	"para":          PARA,
+	"finpara":       FINPARA,
+	"hasta":         HASTA,
+	"con":           CON,
+	"paso":          PASO,
 }

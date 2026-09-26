@@ -172,6 +172,8 @@ func (p *Parser) parse_keyword() (ast.Stmt, error) {
 		return p.parse_clear_screen()
 	case lexer.DIMENSIONAR:
 		return p.parse_dimension()
+	case lexer.PARA:
+		return p.parse_for()
 	}
 
 	return nil, nil
