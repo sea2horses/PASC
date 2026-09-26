@@ -193,6 +193,8 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 		}
 
 		cg.write(")")
+	case *tast.Call:
+		cg.generateCall(n)
 	case *tast.ClearScreen:
 		cg.write("%s()", ClearFn)
 	case *tast.MainFunction:

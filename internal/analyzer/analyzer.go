@@ -33,6 +33,9 @@ func (a *Analyzer) Analyze(program *ast.MainFunction) (*tast.MainFunction, []dia
 		},
 	)
 
+	/* Builtins */
+	a.declare_builtins()
+
 	statements := a.analyze_statement_block(program.Stmts)
 
 	return &tast.MainFunction{

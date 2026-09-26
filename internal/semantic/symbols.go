@@ -13,10 +13,6 @@ const (
 	SymbolFunction
 )
 
-type BuiltinInfo struct {
-	GeneratorName string
-}
-
 type Symbol struct {
 	Name     string
 	Kind     SymbolKind

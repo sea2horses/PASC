@@ -46,25 +46,6 @@ func (t TypeSignature) Equals(other TypeSignature) bool {
 
 type Type interface{ Signature() TypeSignature }
 
-type ArrayType struct {
-	Elem Type
-	Rank int
-}
-
-func (t ArrayType) String() string {
-	return t.Signature().String()
-}
-
-func (t ArrayType) Signature() TypeSignature {
-	return TypeSignature{
-		BaseType: "array",
-		GenericParams: []TypeSignature{
-			t.Elem.Signature(),
-		},
-		Metadata: fmt.Sprintf("%d", t.Rank),
-	}
-}
-
 /* Based on type signatures */
 func EqualTypes(a, b Type) bool {
 	return a.Signature().Equals(b.Signature())
