@@ -1,6 +1,8 @@
 package semantic
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type InferType struct {
 	ID       int
@@ -16,3 +18,9 @@ func (i *InferType) Signature() TypeSignature {
 		return i.Resolved.Signature()
 	}
 }
+
+func (i *InferType) String() string {
+	return i.Signature().String()
+}
+
+func InferTo(target Type)

@@ -33,6 +33,8 @@ func (a *Analyzer) analyze_expression(expr ast.Expr) tast.TypedExpr {
 		return a.analyze_unary_operation(node)
 	case *ast.BinaryOperation:
 		return a.analyze_binary_operation(node)
+	case *ast.Index:
+		return a.analyze_indexing(node)
 	}
 
 	diagnostics.Dbg("Could not find the expression type")

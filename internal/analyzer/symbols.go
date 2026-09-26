@@ -117,6 +117,14 @@ func (a *Analyzer) analyze_assignment(ass *ast.Assignment) *tast.Assignment {
 		return nil
 	}
 
+	/* Try coercing */
+	_, ok = coerce_to(typed_expr, target.Type())
+	if !ok {
+		a.Report(ass.NodeSpan(), "%s", ErrIncorrectType{Expected: target.Type(), Got: typed_expr.Type()}.Error())
+		a.Info(lvalue.AssignmentOrigin().Span, "%s", lvalue.AssignmentOrigin().Message)
+		return nil
+	}
+
 	/* Check coherence between target type and content type */
 	if !semantic.EqualTypes(typed_expr.Type(), target.Type()) {
 		var og_type semantic.Type = typed_expr.Type()

@@ -37,6 +37,14 @@ func (a *Analyzer) analyze_dimension(d *ast.Dimension) *tast.Dimension {
 			continue
 		}
 
+		/* Try coercing */
+		expr, ok = coerce_to(expr, semantic.IntegerType{})
+		if !ok {
+			a.Report(dim.NodeSpan(), "dimension must be an integer")
+			ok = false
+			continue
+		}
+
 		dims = append(dims, expr)
 	}
 
@@ -80,11 +88,17 @@ func (a *Analyzer) analyze_indexing(d *ast.Index) *tast.Index {
 	}
 
 	ok = true
-	indexes := make([]tast.TypedExpr, len(d.Indexes))
+	indexes := []tast.TypedExpr{}
 	for _, index := range d.Indexes {
 		curr := a.analyze_expression(index)
 		if curr == nil || semantic.IsInvalid(curr.Type()) {
 			ok = false
+			continue
+		}
+
+		curr, ok := coerce_to(curr, semantic.IntegerType{})
+		if !ok {
+			a.Report(curr.NodeSpan(), "index must be an integer")
 			continue
 		}
 		indexes = append(indexes, curr)
