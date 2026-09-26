@@ -4,4 +4,5 @@ Algoritmo Trigonometria
 
     Escribir seno
     Escribir coseno
+    Escribir Sen(782)
 FinAlgoritmo

@@ -29,6 +29,18 @@ func (a *Analyzer) declare_builtins() {
 			},
 			Mutable: false,
 		},
+		&semantic.Symbol{
+			Name: "Trunc",
+			Kind: semantic.SymbolFunction,
+			Type: semantic.FunctionType{
+				Params: []semantic.Type{semantic.RealType{}},
+				Return: semantic.RealType{},
+			},
+			Builtin: &semantic.BuiltinInfo{
+				Kind: semantic.BuiltinTrunc,
+			},
+			Mutable: false,
+		},
 	}
 
 	for _, builtin := range builtins {

@@ -240,6 +240,10 @@ func (cg *CodeGenerator) generateBuiltinCall(
 		cg.write("math.Cos(")
 		cg.write_node(args[0])
 		cg.write(")")
+	case semantic.BuiltinTrunc:
+		cg.write("math.Trunc(")
+		cg.write_node(args[0])
+		cg.write(")")
 	}
 }
 
