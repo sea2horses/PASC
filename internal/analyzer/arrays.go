@@ -6,7 +6,7 @@ import (
 	"pseint-compiled/internal/semantic"
 )
 
-func (a *Analyzer) AnalyzeDimension(d *ast.Dimension) *tast.Dimension {
+func (a *Analyzer) analyze_dimension(d *ast.Dimension) *tast.Dimension {
 	ok := true
 
 	inf := a.type_table.MakeInference()
@@ -51,7 +51,7 @@ func (a *Analyzer) AnalyzeDimension(d *ast.Dimension) *tast.Dimension {
 	}
 }
 
-func (a *Analyzer) AnalyzeIndexing(d *ast.Index) *tast.Index {
+func (a *Analyzer) analyze_indexing(d *ast.Index) *tast.Index {
 	/* Right now you can only index arrays */
 
 	/* Analyze expression to be indexed */
