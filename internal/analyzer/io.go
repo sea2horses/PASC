@@ -34,7 +34,7 @@ func (a *Analyzer) analyze_write(write *ast.Write) *tast.Write {
 			continue
 		}
 		/* Check that the type is supported */
-		if !slices.Contains(allowed_write_types, typed.Type()) {
+		if !slices.Contains(allowed_write_types, semantic.Resolve(typed.Type())) {
 			a.Report(typed.NodeSpan(), "%s", ErrUnsupportedType{Type: typed.Type()}.Error())
 			ok = false
 			continue

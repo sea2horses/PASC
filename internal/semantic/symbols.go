@@ -43,6 +43,10 @@ func (s *Scope) Parent() *Scope {
 }
 
 func (s *Scope) Declare(symbol *Symbol) bool {
+	if symbol == nil {
+		panic("GAVE A NIL SYMBOL! CANNOT DECLARE.")
+	}
+
 	key := NormalizeName(symbol.Name)
 	if _, exists := s.symbols[key]; exists {
 		return false

@@ -16,12 +16,13 @@ func (a *Analyzer) analyze_dimension(d *ast.Dimension) *tast.Dimension {
 		Declared: d.NodeSpan(),
 		Kind:     semantic.SymbolVariable,
 		Mutable:  false,
+		Name:     d.Name,
 	}
 
 	/* Check that symbol doesn't exist */
-	if symbol, ok := a.scope.Lookup(d.Name); ok {
+	if s, ok := a.scope.Lookup(d.Name); ok {
 		a.Report(d.NodeSpan(), "'%s' is already defined in this scope", d.Name)
-		a.Info(symbol.Declared, "declared here")
+		a.Info(s.Declared, "declared here")
 		ok = false
 	} else {
 		a.scope.Declare(symbol)
@@ -59,24 +60,30 @@ func (a *Analyzer) analyze_dimension(d *ast.Dimension) *tast.Dimension {
 	}
 }
 
-func (a *Analyzer) analyze_indexing(d *ast.Index) *tast.Index {
+func (a *Analyzer) analyze_indexing(d *ast.Index) tast.TypedExpr {
 	/* Right now you can only index arrays */
 
 	/* Analyze expression to be indexed */
 	typed_expr := a.analyze_expression(d.Target)
 	if typed_expr == nil || semantic.IsInvalid(typed_expr.Type()) {
-		return nil
+		return &tast.ErrorExpr{
+			NodeInfo: d.NodeInfo,
+		}
 	}
 
 	lv, ok := typed_expr.(tast.LValue)
 	if !ok {
 		a.Report(d.NodeSpan(), "cannot index non-lvalue")
-		return nil
+		return &tast.ErrorExpr{
+			NodeInfo: d.NodeInfo,
+		}
 	}
 
 	if !semantic.IsArray(typed_expr.Type()) {
 		a.Report(d.NodeSpan(), "cannot index non-array type '%s'", typed_expr.Type())
-		return nil
+		return &tast.ErrorExpr{
+			NodeInfo: d.NodeInfo,
+		}
 	}
 
 	underlying_type := (typed_expr.Type().(semantic.ArrayType)).Elem
@@ -84,7 +91,9 @@ func (a *Analyzer) analyze_indexing(d *ast.Index) *tast.Index {
 
 	if len(d.Indexes) != array_rank {
 		a.Report(d.NodeSpan(), "index count mismatch: expected %d, got %d", array_rank, len(d.Indexes))
-		return nil
+		return &tast.ErrorExpr{
+			NodeInfo: d.NodeInfo,
+		}
 	}
 
 	ok = true
@@ -105,7 +114,9 @@ func (a *Analyzer) analyze_indexing(d *ast.Index) *tast.Index {
 	}
 
 	if !ok {
-		return nil
+		return &tast.ErrorExpr{
+			NodeInfo: d.NodeInfo,
+		}
 	}
 
 	return &tast.Index{

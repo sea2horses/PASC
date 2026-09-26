@@ -23,4 +23,16 @@ func (i *InferType) String() string {
 	return i.Signature().String()
 }
 
-func InferTo(target Type)
+func Resolve(t Type) Type {
+	infer, ok := t.(*InferType)
+	if !ok {
+		return t
+	}
+
+	if infer.Resolved == nil {
+		return infer
+	}
+
+	infer.Resolved = Resolve(infer.Resolved)
+	return infer.Resolved
+}

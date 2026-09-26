@@ -36,32 +36,18 @@ func (a *Analyzer) assert_nonvoid(exprs ...tast.TypedExpr) bool {
 	return a.assert_nontype(semantic.VoidType{}, ErrUnexpectedVoid, exprs...)
 }
 
-func resolve(t semantic.Type) semantic.Type {
-	infer, ok := t.(*semantic.InferType)
-	if !ok {
-		return t
-	}
-
-	if infer.Resolved == nil {
-		return infer
-	}
-
-	infer.Resolved = resolve(infer.Resolved)
-	return infer.Resolved
-}
-
 func unify(target semantic.Type, source semantic.Type) bool {
-	target = resolve(target)
-	source = resolve(source)
+	target = semantic.Resolve(target)
+	source = semantic.Resolve(source)
 
 	// Target is unknown: learn from source.
-	if infer, ok := target.(*semantic.InferType); ok {
+	if infer, ok := target.(*semantic.InferType); ok && infer.Resolved == nil {
 		infer.Resolved = source
 		return true
 	}
 
 	// Source is unknown: propagate the constraint.
-	if infer, ok := source.(*semantic.InferType); ok {
+	if infer, ok := source.(*semantic.InferType); ok && infer.Resolved == nil {
 		infer.Resolved = target
 		return true
 	}
@@ -70,8 +56,8 @@ func unify(target semantic.Type, source semantic.Type) bool {
 }
 
 func coerce_to(expr tast.TypedExpr, target semantic.Type) (tast.TypedExpr, bool) {
-	target = resolve(target)
-	source := resolve(expr.Type())
+	target = semantic.Resolve(target)
+	source := semantic.Resolve(expr.Type())
 
 	/* Unify in case */
 	ok := unify(target, source)

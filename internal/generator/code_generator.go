@@ -70,6 +70,7 @@ func (cg *CodeGenerator) Generate(ast tast.Node) []byte {
 	return cg.buffer.Bytes()
 }
 
+/* TODO: Valdiation pass, don't generate code for statements with uninferred types */
 func (cg *CodeGenerator) write_node(node tast.Node) {
 	switch n := node.(type) {
 	case *tast.StringLiteral:
@@ -166,6 +167,32 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 			cg.write("}\n")
 		}
 		cg.write("}\n")
+	case *tast.Dimension:
+		arrayType := n.Symbol.Type.(semantic.ArrayType)
+		elemType := semantic.Resolve(arrayType.Elem)
+		typerep, _ := typeMap[elemType]
+		cg.write("%s := NewTensor[%s]", n.Symbol.Name, typerep)
+		cg.write("(")
+		for i, dim := range n.Dimensions {
+			if i > 0 {
+				cg.write(", ")
+			}
+			cg.write("int(")
+			cg.write_node(dim)
+			cg.write(")")
+		}
+		cg.write(")")
+	case *tast.Index:
+		cg.write("*IndexTensor(")
+		cg.write_node(n.Target)
+
+		for _, index := range n.Indexes {
+			cg.write(", int(")
+			cg.write_node(index)
+			cg.write(")")
+		}
+
+		cg.write(")")
 	case *tast.ClearScreen:
 		cg.write("%s()", ClearFn)
 	case *tast.MainFunction:

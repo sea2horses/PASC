@@ -182,6 +182,11 @@ func (i Index) AssignmentOrigin() *AssignmentOrigin {
 	return i.Target.AssignmentOrigin()
 }
 
+func (i Index) IsMutable() bool {
+	/* TODO: ACTUALLY define mutability on indexing */
+	return true
+}
+
 type While struct {
 	ast.NodeInfo
 	Condition TypedExpr
