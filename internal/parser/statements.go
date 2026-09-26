@@ -187,10 +187,22 @@ func (p *Parser) parse_declaration() (ast.Stmt, error) {
 		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{lexer.DEFINIR})
 	}
 
-	/* Var name */
-	name, err := p.eat_token(lexer.IDENTIFIER)
-	if err != nil {
-		p.Report(p.currentSpan(), "expected variable name")
+	names := []string{}
+
+	for {
+		/* Var name */
+		name, err := p.eat_token(lexer.IDENTIFIER)
+		if err != nil {
+			p.Report(p.currentSpan(), "expected variable name")
+		} else {
+			names = append(names, name)
+		}
+
+		if !p.check(lexer.COMMA) {
+			break
+		}
+
+		p.eat_token(lexer.COMMA)
 	}
 
 	_, err = p.eat_keyword(lexer.COMO)
@@ -209,7 +221,7 @@ func (p *Parser) parse_declaration() (ast.Stmt, error) {
 
 	return &ast.Declaration{
 		NodeInfo: p.infoFrom(start),
-		Name:     name,
+		Names:    names,
 		Type:     typeref,
 	}, nil
 }

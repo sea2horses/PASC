@@ -139,12 +139,12 @@ func (e ExprStmt) String() string {
 
 type Declaration struct {
 	NodeInfo
-	Name string
-	Type *TypeRef
+	Names []string
+	Type  *TypeRef
 }
 
 func (d Declaration) String() string {
-	return fmt.Sprintf("decl %s as %s", d.Name, d.Type)
+	return fmt.Sprintf("decl %s as %s", strings.Join(d.Names, ", "), d.Type)
 }
 
 type Assignment struct {

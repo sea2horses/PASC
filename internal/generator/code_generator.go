@@ -5,6 +5,7 @@ import (
 	"fmt"
 	tast "pseint-compiled/internal/ast_typed"
 	"pseint-compiled/internal/semantic"
+	"pseint-compiled/internal/utils"
 	"strings"
 )
 
@@ -113,8 +114,11 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 		cg.write_node(n.RHS)
 		cg.write(")")
 	case *tast.Declaration:
-		typerep, _ := typeMap[n.Symbol.Type]
-		cg.write("var %s %s", n.Symbol.Name, typerep)
+		typerep, _ := typeMap[n.Type]
+		vars := strings.Join(utils.Map(n.Symbols, func(s *semantic.Symbol) string {
+			return s.Name
+		}), ", ")
+		cg.write("var %s %s", vars, typerep)
 	case *tast.Assignment:
 		cg.write_node(n.Target)
 		if n.Declarative {

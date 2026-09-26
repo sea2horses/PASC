@@ -139,8 +139,8 @@ func (uo BinaryOperation) Type() semantic.Type {
 
 type Declaration struct {
 	ast.NodeInfo
-	Symbol *semantic.Symbol
-	Type   semantic.Type
+	Symbols []*semantic.Symbol
+	Type    semantic.Type
 }
 
 type Assignment struct {

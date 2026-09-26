@@ -26,31 +26,14 @@ func (a *Analyzer) analyze_variable(variable *ast.Variable) tast.TypedExpr {
 	}
 }
 
-func (a *Analyzer) analyze_declaration(decl *ast.Declaration) *tast.Declaration {
-	diagnostics.Dbg("Analyzing declaration")
-	/* Let's declare this bitch */
-	/* Check the type exists! */
-	t := a.analyze_type_ref(decl.Type)
-
-	ok := true
-	/* Let's add it to the symbol table */
-	if _, exists := a.scope.Lookup(decl.Name); exists {
-		a.Report(decl.Span, "%s", ErrSymbolAlreadyExists{Name: decl.Name}.Error())
-		ok = false
-	}
-
-	if t == nil {
-		a.Report(decl.Type.Span, "%s", "unknown type")
-		ok = false
-	}
-
-	if !ok {
+func (a *Analyzer) analyze_single_decl(decl *ast.Declaration, name string, t semantic.Type) *semantic.Symbol {
+	if _, exists := a.scope.Lookup(name); exists {
+		a.Report(decl.Span, "%s", ErrSymbolAlreadyExists{Name: name}.Error())
 		return nil
 	}
 
-	/* Else, let's go */
 	symbol := &semantic.Symbol{
-		Name:     decl.Name,
+		Name:     name,
 		Kind:     semantic.SymbolVariable,
 		Type:     t,
 		Declared: decl.Span,
@@ -58,10 +41,39 @@ func (a *Analyzer) analyze_declaration(decl *ast.Declaration) *tast.Declaration 
 	}
 
 	a.scope.Declare(symbol)
+	return symbol
+}
+
+func (a *Analyzer) analyze_declaration(decl *ast.Declaration) *tast.Declaration {
+	diagnostics.Dbg("Analyzing declaration")
+	ok := true
+	/* Let's declare this bitch */
+	/* Check the type exists! */
+	t := a.analyze_type_ref(decl.Type)
+
+	if t == nil {
+		a.Report(decl.Type.Span, "%s", "unknown type")
+		ok = false
+	}
+
+	symbols := []*semantic.Symbol{}
+	for _, n := range decl.Names {
+		symbol := a.analyze_single_decl(decl, n, t)
+
+		if symbol == nil {
+			ok = false
+		}
+
+		symbols = append(symbols, symbol)
+	}
+
+	if !ok {
+		return nil
+	}
 
 	return &tast.Declaration{
 		NodeInfo: decl.NodeInfo,
-		Symbol:   symbol,
+		Symbols:  symbols,
 		Type:     t,
 	}
 }
