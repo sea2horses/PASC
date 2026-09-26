@@ -31,29 +31,39 @@ type Value interface {
 	int64 | float64 | string | bool
 }
 
+func writeval(value any) {
+	switch val := value.(type) {
+	case int64:
+		writer.WriteString(strconv.FormatInt(val, 10))
+	case string:
+		writer.WriteString(val)
+	case float64:
+		s := strconv.FormatFloat(val, 'f', 10, 64)
+		// Clean up if decimal
+		if strings.Contains(s, ".") {
+			s = strings.TrimRight(s, "0")
+			s = strings.Trim(s, ".")
+		}
+		writer.WriteString(s)
+	case bool:
+		if val {
+			writer.WriteString("VERDADERO")
+		} else {
+			writer.WriteString("FALSO")
+		}
+	}
+}
+
 func Write(values ...any) {
 	for _, value := range values {
-		switch val := value.(type) {
-		case int64:
-			writer.WriteString(strconv.FormatInt(val, 10))
-		case string:
-			writer.WriteString(val)
-		case float64:
-			s := strconv.FormatFloat(val, 'f', 10, 64)
-			// Clean up if decimal
-			if strings.Contains(s, ".") {
-				s = strings.TrimRight(s, "0")
-				s = strings.Trim(s, ".")
-			}
-			writer.WriteString(s)
-		case bool:
-			if val {
-				writer.WriteString("VERDADERO")
-			} else {
-				writer.WriteString("FALSO")
-			}
-		}
+		writeval(value)
 		writer.WriteRune('\n')
+	}
+}
+
+func WriteContinuous(values ...any) {
+	for _, value := range values {
+		writeval(value)
 	}
 }
 

@@ -47,7 +47,7 @@ func (a *Analyzer) analyze_write(write *ast.Write) *tast.Write {
 		return nil
 	}
 
-	return &tast.Write{NodeInfo: write.NodeInfo, Content: content}
+	return &tast.Write{NodeInfo: write.NodeInfo, Content: content, Newline: write.Newline}
 }
 
 func (a *Analyzer) analyze_read(read *ast.Read) []*tast.Read {

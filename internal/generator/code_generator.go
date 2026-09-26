@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	RUNTIME_WRITE_FUNCTION = "Write"
-	RUNTIME_SIN_FNCTION    = "math.Sin"
-	RUNTIME_COS_FUNCTION   = "math.Cos"
-	RUNTIME_TRUNC_FUNCTION = "math.Trunc"
+	RUNTIME_WRITE_FUNCTION            = "Write"
+	RUNTIME_WRITE_CONTINUOUS_FUNCTION = "WriteContinuous"
+	RUNTIME_SIN_FNCTION               = "math.Sin"
+	RUNTIME_COS_FUNCTION              = "math.Cos"
+	RUNTIME_TRUNC_FUNCTION            = "math.Trunc"
 
 	FOR_START = "__fl__start"
 	FOR_END   = "__fl__end"
@@ -128,7 +129,11 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 		}
 		cg.write_node(n.Value)
 	case *tast.Write:
-		cg.write("%s(", WriteFn)
+		write := RUNTIME_WRITE_FUNCTION
+		if !n.Newline {
+			write = RUNTIME_WRITE_CONTINUOUS_FUNCTION
+		}
+		cg.write("%s(", write)
 		for i, exp := range n.Content {
 			if i != 0 {
 				cg.write(", ")

@@ -52,6 +52,9 @@ const (
 	PASO
 	FINPARA
 
+	SIN
+	SALTAR
+
 	// Extra
 	BORRAR
 	PANTALLA
@@ -95,4 +98,6 @@ var keywordMap map[string]Keyword = map[string]Keyword{
 	"hasta":         HASTA,
 	"con":           CON,
 	"paso":          PASO,
+	"sin":           SIN,
+	"saltar":        SALTAR,
 }

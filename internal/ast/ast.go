@@ -177,7 +177,8 @@ func (d Dimension) String() string {
 
 type Write struct {
 	NodeInfo
-	Print []Expr
+	Newline bool
+	Print   []Expr
 }
 
 func (w Write) String() string {

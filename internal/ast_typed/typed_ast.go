@@ -231,6 +231,7 @@ type Switch struct {
 
 type Write struct {
 	ast.NodeInfo
+	Newline bool
 	Content []TypedExpr
 }
 

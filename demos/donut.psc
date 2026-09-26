@@ -5,8 +5,8 @@ Algoritmo Dona3D
 	Definir x, yy, oo, NN Como Entero
 	Definir bb Como Caracter
 
-	Dimension bb[1760]
-	Dimension z[1760]
+	Dimensionar bb[1760]
+	Dimensionar z[1760]
 
 	A = 0
 	B = 0

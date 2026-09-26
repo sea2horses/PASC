@@ -13,9 +13,21 @@ func (p *Parser) parse_write() (ast.Stmt, error) {
 	if err != nil {
 		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.ESCRIBIR})
 	}
+
+	newline := true
+	if p.atKeyword(lexer.SIN) {
+		p.eat_keyword(lexer.SIN)
+
+		_, err := p.eat_keyword(lexer.SALTAR)
+		if err != nil {
+			p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{Expected: lexer.SALTAR})
+		}
+
+		newline = false
+	}
 	/* Expressions to be printed */
 	print, err := p.parse_expression_list()
-	return &ast.Write{Print: print, NodeInfo: p.infoFrom(start)}, nil
+	return &ast.Write{Print: print, NodeInfo: p.infoFrom(start), Newline: newline}, nil
 }
 
 func (p *Parser) parse_read() (ast.Stmt, error) {
