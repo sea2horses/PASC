@@ -10,6 +10,9 @@ import (
 
 const (
 	RUNTIME_WRITE_FUNCTION = "Write"
+	RUNTIME_SIN_FNCTION    = "math.Sin"
+	RUNTIME_COS_FUNCTION   = "math.Cos"
+	RUNTIME_TRUNC_FUNCTION = "math.Trunc"
 )
 
 // ALL conversion kinds must be mapped to a runtime function
@@ -233,7 +236,7 @@ func (cg *CodeGenerator) generateBuiltinCall(
 ) {
 	switch builtin.Kind {
 	case semantic.BuiltinSin:
-		cg.write("math.Sin(")
+		cg.write("%s(", RUNTIME_SIN_FNCTION)
 		for i, arg := range args {
 			if i > 0 {
 				cg.write(", ")
@@ -242,7 +245,7 @@ func (cg *CodeGenerator) generateBuiltinCall(
 		}
 		cg.write(")")
 	case semantic.BuiltinCos:
-		cg.write("math.Cos(")
+		cg.write("%s(", RUNTIME_COS_FUNCTION)
 		for i, arg := range args {
 			if i > 0 {
 				cg.write(", ")
@@ -251,7 +254,7 @@ func (cg *CodeGenerator) generateBuiltinCall(
 		}
 		cg.write(")")
 	case semantic.BuiltinTrunc:
-		cg.write("math.Trunc(")
+		cg.write("%s(", RUNTIME_TRUNC_FUNCTION)
 		for i, arg := range args {
 			if i > 0 {
 				cg.write(", ")
@@ -274,36 +277,3 @@ func (cg *CodeGenerator) write_statement_block(stmts []tast.Stmt) {
 	cg.down_scope()
 	cg.write("\n")
 }
-
-// func (cg *CodeGenerator) newline() {
-// 	cg.buffer.WriteRune('\n')
-// 	// Write a tab
-// 	cg.buffer.Write(bytes.Repeat([]byte{'\t'}, int(cg.padding)))
-// }
-
-// func (cg *CodeGenerator) write_node(node ast.Node, buffer *bytes.Buffer) {
-// 	//
-// 	switch n := node.(type) {
-// 	case **ast.StringLiteral:
-// 		buffer.WriteRune('"')
-// 		buffer.WriteString(n.Content)
-// 		buffer.WriteRune('"')
-// 	case **ast.Write:
-// 		buffer.WriteString(RUNTIME_WRITE_FUNCTION)
-// 		buffer.WriteString("(")
-// 		cg.write_node(n.Print, buffer)
-// 		buffer.WriteString(")")
-// 		cg.newline()
-// 	case **ast.MainFunction:
-// 		fmt.Fprintf(buffer, "/* Nombre original de la función: '%s' */", n.Name)
-// 		cg.newline()
-// 		buffer.WriteString("func main() {")
-// 		cg.newline()
-// 		cg.padding++
-// 		for _, stmt := range n.Stmts {
-// 			cg.write_node(stmt, buffer)
-// 		}
-// 		cg.padding--
-// 		buffer.WriteString("}")
-// 	}
-// }
