@@ -234,15 +234,30 @@ func (cg *CodeGenerator) generateBuiltinCall(
 	switch builtin.Kind {
 	case semantic.BuiltinSin:
 		cg.write("math.Sin(")
-		cg.write_node(args[0])
+		for i, arg := range args {
+			if i > 0 {
+				cg.write(", ")
+			}
+			cg.write_node(arg)
+		}
 		cg.write(")")
 	case semantic.BuiltinCos:
 		cg.write("math.Cos(")
-		cg.write_node(args[0])
+		for i, arg := range args {
+			if i > 0 {
+				cg.write(", ")
+			}
+			cg.write_node(arg)
+		}
 		cg.write(")")
 	case semantic.BuiltinTrunc:
 		cg.write("math.Trunc(")
-		cg.write_node(args[0])
+		for i, arg := range args {
+			if i > 0 {
+				cg.write(", ")
+			}
+			cg.write_node(arg)
+		}
 		cg.write(")")
 	}
 }
