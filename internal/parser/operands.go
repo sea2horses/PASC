@@ -52,8 +52,8 @@ func (p *Parser) parse_atom() (ast.Expr, error) {
 		return &ast.StringLiteral{Content: val, NodeInfo: p.infoFrom(start)}, nil
 	case lexer.NUMBER_LITERAL:
 		val, _ := p.eat_token(lexer.NUMBER_LITERAL)
-		num, _ := lexer.MapToNumber([]rune(val))
-		var frac uint64 = 0
+		num := val
+		var frac string = ""
 
 		/* Parse decimal */
 		if tok, err := p.get(); err == nil && tok.Type == lexer.DOT {
@@ -63,7 +63,7 @@ func (p *Parser) parse_atom() (ast.Expr, error) {
 				p.Report(p.currentSpan(), "expected decimal part")
 				return nil, err
 			}
-			frac, _ = lexer.MapToNumber([]rune(val))
+			frac = val
 		}
 		return &ast.NumberLiteral{Int: num, Frac: frac, NodeInfo: p.infoFrom(start)}, nil
 	case lexer.BOOLEAN_LITERAL:

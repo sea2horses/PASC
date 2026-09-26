@@ -215,5 +215,6 @@ func IterTensor[T Value](tensor *Tensor[T]) iter.Seq2[T, int64] {
 /* Extra */
 
 func ClearScreen() {
+	writer.Flush()
 	writer.WriteString("\x1b[2J\x1b[H")
 }

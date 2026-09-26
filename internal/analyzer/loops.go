@@ -26,52 +26,50 @@ func (a *Analyzer) analyze_while(while *ast.While) *tast.While {
 }
 
 func (a *Analyzer) analyze_for(f *ast.For) *tast.For {
-	/* Check that start is a variable */
-	asig := a.analyze_assignment(f.Start)
+	exp := a.analyze_expression(f.Start)
+	variable, ok := exp.(*tast.VariableExpr)
+	if !ok {
+		a.Report(f.Start.NodeSpan(), "Expected variable")
+	}
 
-	/* Check that the step and end are numeric */
-	until := a.analyze_expression(f.Until)
+	start := a.analyze_expression(f.Start)
+	end := a.analyze_expression(f.Until)
 
-	if asig == nil || until == nil {
-		return nil
+	targetType := variable.Type()
+
+	start, ok = coerce_to(start, targetType)
+	if !ok {
+		a.Report(start.NodeSpan(), "Expected antoher typ")
+	}
+	end, ok = coerce_to(end, targetType)
+	if !ok {
+		a.Report(end.NodeSpan(), "Expected antoher typ")
 	}
 
 	var step tast.TypedExpr
 
-	/* If step is not nil, then analyze it */
 	if f.Step != nil {
 		step = a.analyze_expression(f.Step)
+		step, ok = coerce_to(step, targetType)
+		if !ok {
+			a.Report(end.NodeSpan(), "Expected antoher typ")
+		}
+	} else {
+		step = &tast.NumberLiteral{
+			Int: "1",
+		}
 
-		if step == nil {
-			return nil
+		step, ok = coerce_to(step, targetType)
+		if !ok {
+			a.Report(end.NodeSpan(), "Expected antoher typ")
 		}
 	}
 
-	/* Everything in order! */
-
-	/* Check GOOD */
-	variable := asig.Target.(*tast.VariableExpr)
-
-	if variable == nil {
-		a.Report(f.Start.Target.NodeSpan(), "expected variable")
-	}
-
-	if !semantic.IsNumeric(until.Type()) {
-		a.Report(until.NodeSpan(), "expression must be numeric")
-	}
-
-	if step != nil && !semantic.IsNumeric(step.Type()) {
-		a.Report(step.NodeSpan(), "expression must be numeric")
-	}
-
-	stmts := a.analyze_statement_block(f.Stmts)
-
 	return &tast.For{
-		NodeInfo: f.NodeInfo,
-		Var:      variable,
-		Start:    asig.Value,
-		Until:    until,
-		Step:     step,
-		Stmts:    stmts,
+		Var:   variable,
+		Start: start,
+		Until: end,
+		Step:  step,
+		Stmts: a.analyze_statement_block(f.Stmts),
 	}
 }

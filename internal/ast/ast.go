@@ -50,8 +50,8 @@ func (sl StringLiteral) String() string {
 
 type NumberLiteral struct {
 	NodeInfo
-	Int  uint64
-	Frac uint64 /* TODO: THIS IS FUCKED, because of 1.001 */
+	Int  string
+	Frac string /* TODO: THIS IS FUCKED, because of 1.001 */
 }
 
 func (nl NumberLiteral) String() string {

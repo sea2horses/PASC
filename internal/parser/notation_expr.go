@@ -56,40 +56,56 @@ func (p *Parser) read_infix_to_postfix() ([]ast.Node, error) {
 func (p *Parser) postfix_to_expression(chain []ast.Node) (ast.Expr, error) {
 	for {
 		diagnostics.Dbg("Postfix Iteration, expr: ", chain)
+
+		if len(chain) == 1 {
+			expr, ok := chain[0].(ast.Expr)
+			if !ok {
+				return nil, ErrInvalidExpression
+			}
+
+			diagnostics.Dbg("Expression made: ", expr)
+			return expr, nil
+		}
+
 		swapped := false
-		/* Evaluate postfix */
-		for i := range len(chain) - 2 {
+
+		for i := 0; i+2 < len(chain); i++ {
 			first, ok := chain[i].(ast.Expr)
 			if !ok {
 				continue
 			}
+
 			second, ok := chain[i+1].(ast.Expr)
 			if !ok {
 				continue
 			}
+
 			third, ok := chain[i+2].(ast.Operator)
 			if !ok {
 				continue
 			}
 
-			swapped = true
-			/* Replace with new expression */
-			chain = slices.Delete(chain, i, i+3)
-			chain = slices.Insert(chain, i, ast.Node(
-				&ast.BinaryOperation{
-					LHS: first,
-					RHS: second,
-					Op:  third,
-					NodeInfo: ast.NodeInfo{
-						Span: models.JoinSpans(first.NodeSpan(), second.NodeSpan(), third.NodeSpan()),
-					},
+			expr := &ast.BinaryOperation{
+				LHS: first,
+				RHS: second,
+				Op:  third,
+				NodeInfo: ast.NodeInfo{
+					Span: models.JoinSpans(
+						first.NodeSpan(),
+						second.NodeSpan(),
+						third.NodeSpan(),
+					),
 				},
-			))
-		}
+			}
 
-		if len(chain) == 1 {
-			diagnostics.Dbg("Expression made: ", chain[0])
-			return chain[0], nil
+			chain = slices.Delete(chain, i, i+3)
+			chain = slices.Insert(chain, i, ast.Node(expr))
+
+			swapped = true
+
+			// IMPORTANT:
+			// chain changed, restart the scan.
+			break
 		}
 
 		if !swapped {

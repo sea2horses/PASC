@@ -3,7 +3,6 @@ Algoritmo Dona3D
 	Definir c, d, e, f, g, h Como Real
 	Definir DD, l, m, n, t Como Real
 	Definir x, yy, oo, NN Como Entero
-	Definir bb Como Caracter
 
 	Dimensionar bb[1760]
 	Dimensionar z[1760]
@@ -13,11 +12,12 @@ Algoritmo Dona3D
 
 	Mientras Verdadero Hacer
 
-		// Limpiar bbuffers
-		Para i = 0 Hasta 1759 Hacer
+		i = 0
+		Mientras i <= 1759 Hacer
 			bb[i] = " "
 			z[i] = 0
-		FinPara
+			i = i + 1
+		FinMientras
 
 		j = 0
 
@@ -48,7 +48,7 @@ Algoritmo Dona3D
 
 				NN = Trunc(8 * ((f * e - c * d * g) * m - c * d * e - f * g - l * d * n))
 
-				Si yy >= 0 Y yy < 22 Y x >= 0 Y x < 80 Entonces
+				Si yy >= 0 && yy < 22 && x >= 0 && x < 80 Entonces
 					Si DD > z[oo] Entonces
 						z[oo] = DD
 
@@ -95,14 +95,20 @@ Algoritmo Dona3D
 			j = j + 0.07
 		FinMientras
 
-		Limpiar Pantalla
+		Borrar Pantalla
 
-		Para yy = 0 Hasta 21 Hacer
-			Para x = 0 Hasta 79 Hacer
+		yy = 0
+		Mientras yy <= 21 Hacer
+
+			x = 0
+			Mientras x <= 79 Hacer
 				Escribir Sin Saltar bb[x + 80 * yy]
-			FinPara
+				x = x + 1
+			FinMientras
+
 			Escribir ""
-		FinPara
+			yy = yy + 1
+		FinMientras
 
 		A = A + 0.04
 		B = B + 0.02

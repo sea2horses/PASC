@@ -58,8 +58,8 @@ func (*StringLiteral) Type() semantic.Type {
 
 type NumberLiteral struct {
 	ast.NodeInfo
-	Int  uint64
-	Frac uint64
+	Int  string
+	Frac string
 }
 
 func (*NumberLiteral) exprNode() {}

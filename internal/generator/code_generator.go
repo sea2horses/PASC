@@ -85,7 +85,11 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 	case *tast.StringLiteral:
 		cg.write("\"%s\"", n.Value)
 	case *tast.NumberLiteral:
-		cg.write("%d.%d", n.Int, n.Frac)
+		if n.Frac != "" {
+			cg.write("%s.%s", n.Int, n.Frac)
+		} else {
+			cg.write("%s.0", n.Int)
+		}
 	case *tast.BooleanLiteral:
 		if n.Value {
 			cg.write("true")
