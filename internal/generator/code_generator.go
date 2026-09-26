@@ -203,6 +203,44 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 	}
 }
 
+func (cg *CodeGenerator) generateCall(call *tast.Call) {
+	if variable, ok := call.Callable.(*tast.VariableExpr); ok {
+		if variable.Symbol.Builtin != nil {
+			cg.generateBuiltinCall(variable.Symbol.Builtin, call.Arguments)
+			return
+		}
+	}
+
+	cg.write_node(call.Callable)
+	cg.write("(")
+
+	for i, arg := range call.Arguments {
+		if i > 0 {
+			cg.write(", ")
+		}
+
+		cg.write_node(arg)
+	}
+
+	cg.write(")")
+}
+
+func (cg *CodeGenerator) generateBuiltinCall(
+	builtin *semantic.BuiltinInfo,
+	args []tast.TypedExpr,
+) {
+	switch builtin.Kind {
+	case semantic.BuiltinSin:
+		cg.write("math.Sin(")
+		cg.write_node(args[0])
+		cg.write(")")
+	case semantic.BuiltinCos:
+		cg.write("math.Cos(")
+		cg.write_node(args[0])
+		cg.write(")")
+	}
+}
+
 func (cg *CodeGenerator) write_statement_block(stmts []tast.Stmt) {
 	cg.up_scope()
 	cg.write("\n")

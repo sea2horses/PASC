@@ -1,0 +1,37 @@
+package analyzer
+
+import "pseint-compiled/internal/semantic"
+
+func (a *Analyzer) declare_builtins() {
+
+	builtins := []*semantic.Symbol{
+		&semantic.Symbol{
+			Name: "Sen",
+			Kind: semantic.SymbolFunction,
+			Type: semantic.FunctionType{
+				Params: []semantic.Type{semantic.RealType{}},
+				Return: semantic.RealType{},
+			},
+			Builtin: &semantic.BuiltinInfo{
+				Kind: semantic.BuiltinSin,
+			},
+			Mutable: false,
+		},
+		&semantic.Symbol{
+			Name: "Cos",
+			Kind: semantic.SymbolFunction,
+			Type: semantic.FunctionType{
+				Params: []semantic.Type{semantic.RealType{}},
+				Return: semantic.RealType{},
+			},
+			Builtin: &semantic.BuiltinInfo{
+				Kind: semantic.BuiltinCos,
+			},
+			Mutable: false,
+		},
+	}
+
+	for _, builtin := range builtins {
+		a.scope.Declare(builtin)
+	}
+}

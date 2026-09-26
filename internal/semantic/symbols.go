@@ -13,12 +13,17 @@ const (
 	SymbolFunction
 )
 
+type BuiltinInfo struct {
+	GeneratorName string
+}
+
 type Symbol struct {
 	Name     string
 	Kind     SymbolKind
 	Type     Type
 	Declared models.Span
 	Mutable  bool
+	Builtin  *BuiltinInfo
 }
 
 type Scope struct {

@@ -178,6 +178,19 @@ func (i Index) Type() semantic.Type {
 	return i.IndexType
 }
 
+type Call struct {
+	ast.NodeInfo
+	Callable  TypedExpr
+	Arguments []TypedExpr
+	Return    semantic.Type
+}
+
+func (*Call) exprNode() {}
+
+func (i Call) Type() semantic.Type {
+	return i.Return
+}
+
 func (i Index) AssignmentOrigin() *AssignmentOrigin {
 	return i.Target.AssignmentOrigin()
 }
