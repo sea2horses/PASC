@@ -9,16 +9,24 @@ import (
 type TypeSignature struct {
 	BaseType      string
 	GenericParams []TypeSignature
+	Metadata      string
 }
 
 func (t TypeSignature) String() string {
-	if len(t.GenericParams) == 0 {
-		return t.BaseType
+	var s strings.Builder
+
+	s.WriteString(t.BaseType)
+	if len(t.GenericParams) > 0 || t.Metadata != "" {
+		params := strings.Join(utils.Map(t.GenericParams, func(gp TypeSignature) string {
+			return gp.String()
+		}), ", ")
+
+		final := strings.Join([]string{params, t.Metadata}, ";")
+
+		fmt.Fprintf(&s, "<%s>", final)
 	}
-	params := utils.Map(t.GenericParams, func(gp TypeSignature) string {
-		return gp.String()
-	})
-	return fmt.Sprintf("%s<%s>", t.BaseType, strings.Join(params, ", "))
+
+	return s.String()
 }
 
 func (t TypeSignature) Equals(other TypeSignature) bool {
@@ -53,6 +61,7 @@ func (t ArrayType) Signature() TypeSignature {
 		GenericParams: []TypeSignature{
 			t.Elem.Signature(),
 		},
+		Metadata: fmt.Sprintf("%d", t.Rank),
 	}
 }
 

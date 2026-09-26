@@ -163,6 +163,25 @@ func (c Cast) Type() semantic.Type {
 	return c.TargetType
 }
 
+type Index struct {
+	ast.NodeInfo
+	Target    LValue
+	Indexes   []TypedExpr
+	IndexType semantic.Type
+}
+
+func (Index) exprNode() {}
+
+func (Index) lvalue() {}
+
+func (i Index) Type() semantic.Type {
+	return i.IndexType
+}
+
+func (i Index) AssignmentOrigin() *AssignmentOrigin {
+	return i.Target.AssignmentOrigin()
+}
+
 type While struct {
 	ast.NodeInfo
 	Condition TypedExpr
@@ -185,13 +204,6 @@ type Switch struct {
 type Write struct {
 	ast.NodeInfo
 	Content []TypedExpr
-}
-
-type Index struct {
-	ast.NodeInfo
-	Target       TypedExpr
-	Indexes      []TypedExpr
-	ResolvedType semantic.Type
 }
 
 type Dimension struct {
