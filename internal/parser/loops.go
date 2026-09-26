@@ -99,6 +99,14 @@ func (p *Parser) parse_for() (ast.Stmt, error) {
 		}
 	}
 
+	_, err = p.eat_keyword(lexer.HACER)
+
+	_, err = p.eat_token(lexer.NEWLINE)
+	if err != nil {
+		p.Report(p.currentSpan(), "expected newline")
+		p.skip_to_nextline()
+	}
+
 	/* Get info from here */
 	info := p.infoFrom(start)
 
