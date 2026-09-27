@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"pseint-compiled/internal/models"
 	"pseint-compiled/internal/operators"
+	"pseint-compiled/internal/semantic"
 	"pseint-compiled/internal/utils"
 	"strings"
 )
@@ -192,6 +193,16 @@ type Read struct {
 
 func (r Read) String() string {
 	return fmt.Sprintf("Read %s", r.Into)
+}
+
+type TimeOut struct {
+	NodeInfo
+	Amount Expr
+	Unit   semantic.TimeUnit
+}
+
+func (to TimeOut) String() string {
+	return fmt.Sprintf("Wait %s %s", to.Amount, to.Unit)
 }
 
 type If struct {

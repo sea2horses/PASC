@@ -216,6 +216,12 @@ type For struct {
 	Stmts []Stmt
 }
 
+type TimeOut struct {
+	ast.NodeInfo
+	Amount TypedExpr
+	Unit   semantic.TimeUnit
+}
+
 type Case struct {
 	ast.NodeInfo
 	Value TypedExpr

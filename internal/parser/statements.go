@@ -174,6 +174,8 @@ func (p *Parser) parse_keyword() (ast.Stmt, error) {
 		return p.parse_dimension()
 	case lexer.PARA:
 		return p.parse_for()
+	case lexer.ESPERAR:
+		return p.parse_timeout()
 	}
 
 	return nil, nil

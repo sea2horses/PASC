@@ -113,6 +113,8 @@ Algoritmo Dona3D
 		A = A + 0.04
 		B = B + 0.02
 
+		Esperar 30 Milisegundos
+
 	FinMientras
 
 FinAlgoritmo

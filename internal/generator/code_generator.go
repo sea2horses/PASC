@@ -21,6 +21,11 @@ const (
 	FOR_STEP  = "__fl_step"
 )
 
+var timeMap map[semantic.TimeUnit]string = map[semantic.TimeUnit]string{
+	semantic.MILISEGUNDOS: "time.Millisecond",
+	semantic.SEGUNDOS:     "time.Second",
+}
+
 // ALL conversion kinds must be mapped to a runtime function
 var conversionMap map[semantic.ConversionKind]string = map[semantic.ConversionKind]string{
 	semantic.ConversionIntegerToReal:      "IntegerToReal",
@@ -187,6 +192,12 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 			cg.write("}\n")
 		}
 		cg.write("}\n")
+	case *tast.TimeOut:
+		cg.write("timeout(")
+		cg.write_node(n.Amount)
+		cg.write(" * ")
+		cg.write("%s", timeMap[n.Unit])
+		cg.write(")")
 	case *tast.Dimension:
 		arrayType := n.Symbol.Type.(semantic.ArrayType)
 		elemType := semantic.Resolve(arrayType.Elem)

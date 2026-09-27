@@ -58,6 +58,10 @@ const (
 	// Extra
 	BORRAR
 	PANTALLA
+
+	ESPERAR
+	SEGUNDOS
+	MILISEGUNDOS
 )
 
 func MapToKeyword(str []rune) (Keyword, bool) {
@@ -100,4 +104,7 @@ var keywordMap map[string]Keyword = map[string]Keyword{
 	"paso":          PASO,
 	"sin":           SIN,
 	"saltar":        SALTAR,
+	"esperar":       ESPERAR,
+	"segundos":      SEGUNDOS,
+	"milisegundos":  MILISEGUNDOS,
 }

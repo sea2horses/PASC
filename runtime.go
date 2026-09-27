@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 /* Errors */
@@ -29,6 +30,10 @@ var reader bufio.Reader = *bufio.NewReader(os.Stdin)
 
 type Value interface {
 	int64 | float64 | string | bool
+}
+
+func timeout(duration time.Duration) {
+	time.Sleep(duration)
 }
 
 func writeval(value any) {
