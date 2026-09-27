@@ -13,7 +13,7 @@ func (a *Analyzer) analyze_if(i *ast.If) *tast.If {
 	typed_condition := a.analyze_expression(i.Condition)
 	stmts := a.analyze_statement_block(i.Stmts)
 	/* Assert the condition type to be boolean */
-	ok := a.assert_type(semantic.BooleanType, typed_condition)
+	ok := a.assert_type(semantic.BooleanType{}, typed_condition)
 	if !ok {
 		return nil
 	}
@@ -38,24 +38,6 @@ func (a *Analyzer) analyze_else(e *ast.Else) *tast.Else {
 	return &tast.Else{NodeInfo: e.NodeInfo, Stmts: stmts}
 }
 
-func (a *Analyzer) analyze_while(while *ast.While) *tast.While {
-	diagnostics.Dbg("Analyzing while...")
-	/* Analyze the condition */
-	typed_condition := a.analyze_expression(while.Condition)
-	stmts := a.analyze_statement_block(while.Stmts)
-	/* Assert the condition type to be boolean */
-	ok := a.assert_type(semantic.BooleanType, typed_condition)
-	if !ok {
-		return nil
-	}
-
-	return &tast.While{
-		NodeInfo:  while.NodeInfo,
-		Condition: typed_condition,
-		Stmts:     stmts,
-	}
-}
-
 func (a *Analyzer) analyze_switch(s *ast.Switch) *tast.Switch {
 	diagnostics.Dbg("Analyzing switch...")
 
@@ -71,7 +53,7 @@ func (a *Analyzer) analyze_switch(s *ast.Switch) *tast.Switch {
 		if !semantic.EqualTypes(typed_base.Type(), typed_value.Type()) {
 			var ok bool
 			typed_value, ok = tryConvert(typed_value, typed_base.Type())
-			if !ok || typed_value == nil {
+			if !ok {
 				a.Report(typed_value.NodeSpan(), "expression of type %s cannot be assigned to %s", typed_value.Type(), typed_base.Type())
 				continue
 			}

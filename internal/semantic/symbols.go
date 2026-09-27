@@ -1,6 +1,7 @@
 package semantic
 
 import (
+	"pseint-compiled/internal/diagnostics"
 	"pseint-compiled/internal/models"
 	"strings"
 )
@@ -19,6 +20,7 @@ type Symbol struct {
 	Type     Type
 	Declared models.Span
 	Mutable  bool
+	Builtin  *BuiltinInfo
 }
 
 type Scope struct {
@@ -43,6 +45,12 @@ func (s *Scope) Parent() *Scope {
 }
 
 func (s *Scope) Declare(symbol *Symbol) bool {
+	if symbol == nil {
+		panic("GAVE A NIL SYMBOL! CANNOT DECLARE.")
+	}
+
+	diagnostics.Dbgfmt("Declared new symbol: %+v", symbol)
+
 	key := NormalizeName(symbol.Name)
 	if _, exists := s.symbols[key]; exists {
 		return false
@@ -68,14 +76,15 @@ func (s *Scope) Lookup(name string) (*Symbol, bool) {
 }
 
 type TypeTable struct {
-	table map[string]Type
+	table      map[string]Type
+	inferences int
 }
 
 var default_table map[string]Type = map[string]Type{
-	"entero": IntegerType,
-	"cadena": StringType,
-	"logico": BooleanType,
-	"real":   RealType,
+	"entero": IntegerType{},
+	"cadena": StringType{},
+	"logico": BooleanType{},
+	"real":   RealType{},
 }
 
 func NewTypeTable() *TypeTable {
@@ -84,10 +93,18 @@ func NewTypeTable() *TypeTable {
 	}
 }
 
-func (s *TypeTable) Get(name string) *Type {
+func (s *TypeTable) MakeInference() Type {
+	s.inferences++
+	return &InferType{
+		ID:       s.inferences,
+		Resolved: nil,
+	}
+}
+
+func (s *TypeTable) Get(name string) Type {
 	t, ok := s.table[NormalizeName(name)]
 	if !ok {
 		return nil
 	}
-	return &t
+	return t
 }

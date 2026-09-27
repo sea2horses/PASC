@@ -2,16 +2,22 @@ package main
 
 import (
 	"bufio"
+	"iter"
 	"math"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 /* Errors */
 const (
-	ErrIncorrectType   = "No coinciden los tipos"
-	ErrNonWholeInteger = "No se puede declarar un decimal a un entero"
+	ErrIncorrectType     = "No coinciden los tipos"
+	ErrNonWholeInteger   = "No se puede declarar un decimal a un entero"
+	ErrNoDimensions      = "No se puede hacer un arreglo sin dimensiones"
+	ErrNegativeDimension = "Un arreglo no puede tener dimensiones negativas o iguales a 0"
+	ErrWrongIndexCount   = "No se proveyeron suficientes indices"
+	ErrIndexOutOfBounds  = "El indice esta fuera de rango"
 )
 
 func RuntimeError(msg string) {
@@ -26,29 +32,43 @@ type Value interface {
 	int64 | float64 | string | bool
 }
 
+func timeout(duration time.Duration) {
+	time.Sleep(duration)
+}
+
+func writeval(value any) {
+	switch val := value.(type) {
+	case int64:
+		writer.WriteString(strconv.FormatInt(val, 10))
+	case string:
+		writer.WriteString(val)
+	case float64:
+		s := strconv.FormatFloat(val, 'f', 10, 64)
+		// Clean up if decimal
+		if strings.Contains(s, ".") {
+			s = strings.TrimRight(s, "0")
+			s = strings.Trim(s, ".")
+		}
+		writer.WriteString(s)
+	case bool:
+		if val {
+			writer.WriteString("VERDADERO")
+		} else {
+			writer.WriteString("FALSO")
+		}
+	}
+}
+
 func Write(values ...any) {
 	for _, value := range values {
-		switch val := value.(type) {
-		case int64:
-			writer.WriteString(strconv.FormatInt(val, 10))
-		case string:
-			writer.WriteString(val)
-		case float64:
-			s := strconv.FormatFloat(val, 'f', 10, 64)
-			// Clean up if decimal
-			if strings.Contains(s, ".") {
-				s = strings.TrimRight(s, "0")
-				s = strings.Trim(s, ".")
-			}
-			writer.WriteString(s)
-		case bool:
-			if val {
-				writer.WriteString("VERDADERO")
-			} else {
-				writer.WriteString("FALSO")
-			}
-		}
+		writeval(value)
 		writer.WriteRune('\n')
+	}
+}
+
+func WriteContinuous(values ...any) {
+	for _, value := range values {
+		writeval(value)
 	}
 }
 
@@ -124,8 +144,82 @@ func IntegerToReal(value int64) float64 {
 	return float64(value)
 }
 
+/* Arrays */
+const array_bias = 0
+
+type Tensor[T Value] struct {
+	shape   []int
+	strides []int
+	data    []T
+}
+
+func NewTensor[T Value](shape ...int) *Tensor[T] {
+	if len(shape) == 0 {
+		RuntimeError(ErrNoDimensions)
+	}
+
+	size := 1
+	for _, dim := range shape {
+		if dim <= 0 {
+			RuntimeError(ErrNegativeDimension)
+		}
+
+		size *= dim
+	}
+
+	strides := make([]int, len(shape))
+	stride := 1
+	for i := len(shape) - 1; i >= 0; i-- {
+		strides[i] = stride
+		stride *= shape[i]
+	}
+
+	return &Tensor[T]{
+		shape:   append([]int(nil), shape...),
+		strides: strides,
+		data:    make([]T, size),
+	}
+}
+
+func DimensionSize[T Value](t *Tensor[T], dim int) int64 {
+	return int64(t.shape[dim])
+}
+
+func IndexTensor[T Value](t *Tensor[T], indexes ...int) *T {
+	if len(indexes) != len(t.shape) {
+		RuntimeError(ErrWrongIndexCount)
+	}
+
+	/* Index bias */
+	offset := 0
+
+	for i, index := range indexes {
+		/* Turn into real indexes */
+		index = index - array_bias
+
+		if index < 0 || index >= t.shape[i] {
+			RuntimeError(ErrIndexOutOfBounds)
+		}
+
+		offset += index * t.strides[i]
+	}
+
+	return &t.data[offset]
+}
+
+func IterTensor[T Value](tensor *Tensor[T]) iter.Seq2[T, int64] {
+	return func(yield func(T, int64) bool) {
+		for i := 0; i < len(tensor.data); i++ {
+			if !yield(tensor.data[i], int64(i+array_bias)) {
+				return
+			}
+		}
+	}
+}
+
 /* Extra */
 
 func ClearScreen() {
+	writer.Flush()
 	writer.WriteString("\x1b[2J\x1b[H")
 }

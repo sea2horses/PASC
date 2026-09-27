@@ -33,6 +33,10 @@ func (a *Analyzer) analyze_expression(expr ast.Expr) tast.TypedExpr {
 		return a.analyze_unary_operation(node)
 	case *ast.BinaryOperation:
 		return a.analyze_binary_operation(node)
+	case *ast.Index:
+		return a.analyze_indexing(node)
+	case *ast.Call:
+		return a.analyze_call(node)
 	}
 
 	diagnostics.Dbg("Could not find the expression type")
@@ -45,7 +49,7 @@ func (a *Analyzer) analyze_binary_operation(bo *ast.BinaryOperation) tast.TypedE
 	LHS := a.analyze_expression(bo.LHS)
 	RHS := a.analyze_expression(bo.RHS)
 	/* Invalid by default */
-	var resolved_type semantic.Type = semantic.InvalidType
+	var resolved_type semantic.Type = semantic.InvalidType{}
 
 	ok := a.assert_nonvoid(LHS, RHS)
 	if !ok {
@@ -87,7 +91,7 @@ func (a *Analyzer) analyze_unary_operation(uo *ast.UnaryOperation) tast.TypedExp
 	/* Analyze the inner expression */
 	typed_expr := a.analyze_expression(uo.Expr)
 	/* Invalid by default */
-	var resolved_type semantic.Type = semantic.InvalidType
+	var resolved_type semantic.Type = semantic.InvalidType{}
 
 	ok := a.assert_nonvoid(typed_expr)
 	if !ok {

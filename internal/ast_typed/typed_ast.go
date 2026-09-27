@@ -42,7 +42,7 @@ type ErrorExpr struct {
 func (ErrorExpr) exprNode() {}
 
 func (ErrorExpr) Type() semantic.Type {
-	return semantic.InvalidType
+	return semantic.InvalidType{}
 }
 
 type StringLiteral struct {
@@ -53,13 +53,13 @@ type StringLiteral struct {
 func (*StringLiteral) exprNode() {}
 
 func (*StringLiteral) Type() semantic.Type {
-	return semantic.PrimitiveType{Kind: semantic.STRING}
+	return semantic.StringType{}
 }
 
 type NumberLiteral struct {
 	ast.NodeInfo
-	Int  uint64
-	Frac uint64
+	Int  string
+	Frac string
 }
 
 func (*NumberLiteral) exprNode() {}
@@ -67,7 +67,7 @@ func (*NumberLiteral) exprNode() {}
 /* ALL number literals are real by default */
 /* TODO: Add warning to round any operation when assigning to an integer variable */
 func (nl *NumberLiteral) Type() semantic.Type {
-	return semantic.PrimitiveType{Kind: semantic.REAL}
+	return semantic.RealType{}
 }
 
 type BooleanLiteral struct {
@@ -78,7 +78,7 @@ type BooleanLiteral struct {
 func (BooleanLiteral) exprNode() {}
 
 func (BooleanLiteral) Type() semantic.Type {
-	return semantic.PrimitiveType{Kind: semantic.BOOLEAN}
+	return semantic.BooleanType{}
 }
 
 type VariableExpr struct {
@@ -139,8 +139,8 @@ func (uo BinaryOperation) Type() semantic.Type {
 
 type Declaration struct {
 	ast.NodeInfo
-	Symbol *semantic.Symbol
-	Type   semantic.Type
+	Symbols []*semantic.Symbol
+	Type    semantic.Type
 }
 
 type Assignment struct {
@@ -163,10 +163,63 @@ func (c Cast) Type() semantic.Type {
 	return c.TargetType
 }
 
+type Index struct {
+	ast.NodeInfo
+	Target    LValue
+	Indexes   []TypedExpr
+	IndexType semantic.Type
+}
+
+func (Index) exprNode() {}
+
+func (Index) lvalue() {}
+
+func (i Index) Type() semantic.Type {
+	return i.IndexType
+}
+
+type Call struct {
+	ast.NodeInfo
+	Callable  TypedExpr
+	Arguments []TypedExpr
+	Return    semantic.Type
+}
+
+func (*Call) exprNode() {}
+
+func (i Call) Type() semantic.Type {
+	return i.Return
+}
+
+func (i Index) AssignmentOrigin() *AssignmentOrigin {
+	return i.Target.AssignmentOrigin()
+}
+
+func (i Index) IsMutable() bool {
+	/* TODO: ACTUALLY define mutability on indexing */
+	return true
+}
+
 type While struct {
 	ast.NodeInfo
 	Condition TypedExpr
 	Stmts     []Stmt
+}
+
+/* PSEINT Restriction: not any lvalue can be used for a for, only a variable one */
+type For struct {
+	ast.NodeInfo
+	Var   *VariableExpr
+	Start TypedExpr
+	Until TypedExpr
+	Step  TypedExpr
+	Stmts []Stmt
+}
+
+type TimeOut struct {
+	ast.NodeInfo
+	Amount TypedExpr
+	Unit   semantic.TimeUnit
 }
 
 type Case struct {
@@ -184,7 +237,14 @@ type Switch struct {
 
 type Write struct {
 	ast.NodeInfo
+	Newline bool
 	Content []TypedExpr
+}
+
+type Dimension struct {
+	ast.NodeInfo
+	Symbol     *semantic.Symbol
+	Dimensions []TypedExpr
 }
 
 /* Although multiple semantically, in the TAST reads are treated as individual */

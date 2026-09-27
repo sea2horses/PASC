@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"pseint-compiled/internal/ast"
 	"pseint-compiled/internal/diagnostics"
 	"pseint-compiled/internal/lexer"
@@ -23,6 +24,20 @@ func (p *Parser) parse_operand() (ast.Expr, error) {
 }
 
 func (p *Parser) parse_primary() (ast.Expr, error) {
+	expr, err := p.parse_atom()
+	if err != nil {
+		return nil, err
+	}
+
+	expr = p.parse_post(expr)
+	if expr == nil {
+		return nil, errors.New("invalid postfix expression")
+	}
+
+	return expr, nil
+}
+
+func (p *Parser) parse_atom() (ast.Expr, error) {
 	diagnostics.Dbg("Parsing primary!")
 	token, err := p.get()
 	if err != nil {
@@ -37,8 +52,8 @@ func (p *Parser) parse_primary() (ast.Expr, error) {
 		return &ast.StringLiteral{Content: val, NodeInfo: p.infoFrom(start)}, nil
 	case lexer.NUMBER_LITERAL:
 		val, _ := p.eat_token(lexer.NUMBER_LITERAL)
-		num, _ := lexer.MapToNumber([]rune(val))
-		var frac uint64 = 0
+		num := val
+		var frac string = ""
 
 		/* Parse decimal */
 		if tok, err := p.get(); err == nil && tok.Type == lexer.DOT {
@@ -48,7 +63,7 @@ func (p *Parser) parse_primary() (ast.Expr, error) {
 				p.Report(p.currentSpan(), "expected decimal part")
 				return nil, err
 			}
-			frac, _ = lexer.MapToNumber([]rune(val))
+			frac = val
 		}
 		return &ast.NumberLiteral{Int: num, Frac: frac, NodeInfo: p.infoFrom(start)}, nil
 	case lexer.BOOLEAN_LITERAL:

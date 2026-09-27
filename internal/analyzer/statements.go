@@ -45,6 +45,12 @@ func (a *Analyzer) analyze_statement(stmt ast.Stmt) []tast.Stmt {
 		return []tast.Stmt{a.analyze_clear_screen(s)}
 	case *ast.Switch:
 		return []tast.Stmt{a.analyze_switch(s)}
+	case *ast.Dimension:
+		return []tast.Stmt{a.analyze_dimension(s)}
+	case *ast.For:
+		return []tast.Stmt{a.analyze_for(s)}
+	case *ast.TimeOut:
+		return []tast.Stmt{a.analyze_timeout(s)}
 	}
 
 	a.Report(stmt.NodeSpan(), "extraneous statement")

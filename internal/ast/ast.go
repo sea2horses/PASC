@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"pseint-compiled/internal/models"
 	"pseint-compiled/internal/operators"
+	"pseint-compiled/internal/semantic"
+	"pseint-compiled/internal/utils"
 	"strings"
 )
 
@@ -49,8 +51,8 @@ func (sl StringLiteral) String() string {
 
 type NumberLiteral struct {
 	NodeInfo
-	Int  uint64
-	Frac uint64 /* TODO: THIS IS FUCKED, because of 1.001 */
+	Int  string
+	Frac string /* TODO: THIS IS FUCKED, because of 1.001 */
 }
 
 func (nl NumberLiteral) String() string {
@@ -114,6 +116,18 @@ func (bo BinaryOperation) String() string {
 	return fmt.Sprintf("(%s %s %s)", bo.LHS, bo.Op, bo.RHS)
 }
 
+type Index struct {
+	NodeInfo
+	Indexes []Expr
+	Target  Expr
+}
+
+func (i Index) String() string {
+	return fmt.Sprintf("%s[%s]", i.Target, strings.Join(utils.Map(i.Indexes, func(e Expr) string {
+		return e.String()
+	}), ", "))
+}
+
 /* Expression as Statement */
 type ExprStmt struct {
 	NodeInfo
@@ -126,12 +140,12 @@ func (e ExprStmt) String() string {
 
 type Declaration struct {
 	NodeInfo
-	Name string
-	Type *TypeRef
+	Names []string
+	Type  *TypeRef
 }
 
 func (d Declaration) String() string {
-	return fmt.Sprintf("decl %s as %s", d.Name, d.Type)
+	return fmt.Sprintf("decl %s as %s", strings.Join(d.Names, ", "), d.Type)
 }
 
 type Assignment struct {
@@ -144,9 +158,28 @@ func (a Assignment) String() string {
 	return fmt.Sprintf("%s = %s", a.Target, a.Content)
 }
 
+type Dimension struct {
+	NodeInfo
+	Name       string
+	Dimensions []Expr
+}
+
+func (d Dimension) String() string {
+	var builder strings.Builder
+
+	fmt.Fprintf(&builder, "Dimension %s [", d.Name)
+	for _, dim := range d.Dimensions {
+		builder.WriteString(dim.String())
+	}
+	builder.WriteRune(']')
+
+	return builder.String()
+}
+
 type Write struct {
 	NodeInfo
-	Print []Expr
+	Newline bool
+	Print   []Expr
 }
 
 func (w Write) String() string {
@@ -160,6 +193,16 @@ type Read struct {
 
 func (r Read) String() string {
 	return fmt.Sprintf("Read %s", r.Into)
+}
+
+type TimeOut struct {
+	NodeInfo
+	Amount Expr
+	Unit   semantic.TimeUnit
+}
+
+func (to TimeOut) String() string {
+	return fmt.Sprintf("Wait %s %s", to.Amount, to.Unit)
 }
 
 type If struct {
@@ -219,6 +262,33 @@ func (w While) String() string {
 	return builder.String()
 }
 
+type For struct {
+	NodeInfo
+	Start *Assignment
+	Until Expr
+	Step  Expr
+	Stmts []Stmt
+}
+
+func (f For) String() string {
+	var builder strings.Builder
+
+	builder.WriteString(fmt.Sprintf("For %s -> %s", f.Start, f.Until))
+	if f.Step != nil {
+		builder.WriteString(fmt.Sprintf(" wth step %s", f.Step))
+	}
+	builder.WriteString(" {")
+
+	for _, s := range f.Stmts {
+		builder.WriteRune('\n')
+		builder.WriteString(s.String())
+	}
+	builder.WriteRune('\n')
+	builder.WriteString("}")
+
+	return builder.String()
+}
+
 type Switch struct {
 	NodeInfo
 	Base    Expr
@@ -260,6 +330,27 @@ func (c Case) String() string {
 		builder.WriteString(stmt.String() + "\n")
 	}
 	builder.WriteString("}")
+
+	return builder.String()
+}
+
+type Call struct {
+	NodeInfo
+	Callable  Expr
+	Arguments []Expr
+}
+
+func (c Call) String() string {
+	var builder strings.Builder
+
+	builder.WriteString(fmt.Sprintf("Call '%s': (\n", c.Callable))
+
+	args := utils.Map(c.Arguments, func(a Expr) string {
+		return a.String()
+	})
+
+	builder.WriteString(strings.Join(args, ", "))
+	builder.WriteString(")")
 
 	return builder.String()
 }

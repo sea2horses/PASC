@@ -9,10 +9,10 @@ import (
 )
 
 var allowed_write_types []semantic.Type = []semantic.Type{
-	semantic.IntegerType,
-	semantic.BooleanType,
-	semantic.RealType,
-	semantic.StringType,
+	semantic.IntegerType{},
+	semantic.BooleanType{},
+	semantic.RealType{},
+	semantic.StringType{},
 }
 
 func (a *Analyzer) analyze_write(write *ast.Write) *tast.Write {
@@ -34,7 +34,7 @@ func (a *Analyzer) analyze_write(write *ast.Write) *tast.Write {
 			continue
 		}
 		/* Check that the type is supported */
-		if !slices.Contains(allowed_write_types, typed.Type()) {
+		if !slices.Contains(allowed_write_types, semantic.Resolve(typed.Type())) {
 			a.Report(typed.NodeSpan(), "%s", ErrUnsupportedType{Type: typed.Type()}.Error())
 			ok = false
 			continue
@@ -47,7 +47,7 @@ func (a *Analyzer) analyze_write(write *ast.Write) *tast.Write {
 		return nil
 	}
 
-	return &tast.Write{NodeInfo: write.NodeInfo, Content: content}
+	return &tast.Write{NodeInfo: write.NodeInfo, Content: content, Newline: write.Newline}
 }
 
 func (a *Analyzer) analyze_read(read *ast.Read) []*tast.Read {

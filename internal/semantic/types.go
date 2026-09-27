@@ -1,72 +1,68 @@
 package semantic
 
-import "fmt"
-
-type Type interface{ isType() }
-
-type PrimKind uint8
-
-const (
-	INVALID PrimKind = iota
-	VOID
-	INTEGER // translates to int64
-	REAL    // translates to float64
-	STRING  // translates to string
-	BOOLEAN // translates to bool
+import (
+	"fmt"
+	"pseint-compiled/internal/utils"
+	"strings"
 )
 
-type PrimitiveType struct{ Kind PrimKind }
-type ArrayType struct{ Elem Type }
+type TypeSignature struct {
+	BaseType      string
+	GenericParams []TypeSignature
+	Metadata      string
+}
 
-func (PrimitiveType) isType() {}
-func (ArrayType) isType()     {}
+func (t TypeSignature) String() string {
+	var s strings.Builder
 
-func (t PrimitiveType) String() string {
-	switch t.Kind {
-	case INTEGER:
-		return "integer"
-	case REAL:
-		return "real"
-	case STRING:
-		return "string"
-	case BOOLEAN:
-		return "boolean"
-	case VOID:
-		return "void"
-	default:
-		return "<invalid>"
+	s.WriteString(t.BaseType)
+	if len(t.GenericParams) > 0 || t.Metadata != "" {
+		params := strings.Join(utils.Map(t.GenericParams, func(gp TypeSignature) string {
+			return gp.String()
+		}), ", ")
+
+		final := strings.Join([]string{params, t.Metadata}, ";")
+
+		fmt.Fprintf(&s, "<%s>", final)
 	}
+
+	return s.String()
 }
 
-func (t ArrayType) String() string {
-	return fmt.Sprintf("array[%s]", t.Elem)
-}
-
-var (
-	InvalidType = PrimitiveType{Kind: INVALID}
-	VoidType    = PrimitiveType{Kind: VOID}
-	IntegerType = PrimitiveType{Kind: INTEGER}
-	RealType    = PrimitiveType{Kind: REAL}
-	StringType  = PrimitiveType{Kind: STRING}
-	BooleanType = PrimitiveType{Kind: BOOLEAN}
-)
-
-func EqualTypes(a, b Type) bool {
-	switch left := a.(type) {
-	case PrimitiveType:
-		right, ok := b.(PrimitiveType)
-		return ok && left.Kind == right.Kind
-	case ArrayType:
-		right, ok := b.(ArrayType)
-		return ok && EqualTypes(left.Elem, right.Elem)
-	default:
+func (t TypeSignature) Equals(other TypeSignature) bool {
+	if t.BaseType != other.BaseType {
 		return false
 	}
+	if len(t.GenericParams) != len(other.GenericParams) {
+		return false
+	}
+	for i := range t.GenericParams {
+		if !t.GenericParams[i].Equals(other.GenericParams[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+type Type interface{ Signature() TypeSignature }
+
+/* Based on type signatures */
+func EqualTypes(a, b Type) bool {
+	return a.Signature().Equals(b.Signature())
+}
+
+/* Checks if two types are equal at the top level (array vs array) */
+func EqualTopLevelType(a, b Type) bool {
+	return a.Signature().BaseType == b.Signature().BaseType
 }
 
 func IsInvalid(t Type) bool {
 	prim, ok := t.(PrimitiveType)
-	return ok && prim.Kind == INVALID
+	return ok && prim.Kind() == INVALID
+}
+
+func IsVoid(t Type) bool {
+	return EqualTypes(t, VoidType{})
 }
 
 func IsNumeric(t Type) bool {
@@ -75,21 +71,29 @@ func IsNumeric(t Type) bool {
 		return false
 	}
 
-	return prim.Kind == INTEGER || prim.Kind == REAL
+	return prim.Kind() == INTEGER || prim.Kind() == REAL
 }
 
 func IsInteger(t Type) bool {
-	return EqualTypes(t, IntegerType)
+	return EqualTypes(t, IntegerType{})
 }
 
 func IsReal(t Type) bool {
-	return EqualTypes(t, RealType)
+	return EqualTypes(t, RealType{})
 }
 
 func IsString(t Type) bool {
-	return EqualTypes(t, StringType)
+	return EqualTypes(t, StringType{})
 }
 
 func IsBoolean(t Type) bool {
-	return EqualTypes(t, BooleanType)
+	return EqualTypes(t, BooleanType{})
+}
+
+func IsGeneric(t Type) bool {
+	return len(t.Signature().GenericParams) > 0
+}
+
+func IsArray(t Type) bool {
+	return EqualTopLevelType(t, ArrayType{Elem: VoidType{}})
 }

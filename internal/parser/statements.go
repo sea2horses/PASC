@@ -170,6 +170,12 @@ func (p *Parser) parse_keyword() (ast.Stmt, error) {
 		return p.parse_switch()
 	case lexer.BORRAR:
 		return p.parse_clear_screen()
+	case lexer.DIMENSIONAR:
+		return p.parse_dimension()
+	case lexer.PARA:
+		return p.parse_for()
+	case lexer.ESPERAR:
+		return p.parse_timeout()
 	}
 
 	return nil, nil
@@ -183,10 +189,22 @@ func (p *Parser) parse_declaration() (ast.Stmt, error) {
 		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{lexer.DEFINIR})
 	}
 
-	/* Var name */
-	name, err := p.eat_token(lexer.IDENTIFIER)
-	if err != nil {
-		p.Report(p.currentSpan(), "expected variable name")
+	names := []string{}
+
+	for {
+		/* Var name */
+		name, err := p.eat_token(lexer.IDENTIFIER)
+		if err != nil {
+			p.Report(p.currentSpan(), "expected variable name")
+		} else {
+			names = append(names, name)
+		}
+
+		if !p.check(lexer.COMMA) {
+			break
+		}
+
+		p.eat_token(lexer.COMMA)
 	}
 
 	_, err = p.eat_keyword(lexer.COMO)
@@ -205,7 +223,45 @@ func (p *Parser) parse_declaration() (ast.Stmt, error) {
 
 	return &ast.Declaration{
 		NodeInfo: p.infoFrom(start),
-		Name:     name,
+		Names:    names,
 		Type:     typeref,
+	}, nil
+}
+
+func (p *Parser) parse_dimension() (ast.Stmt, error) {
+	start, checkpoint := p.PositionSnapshot()
+
+	_, err := p.eat_keyword(lexer.DIMENSIONAR)
+	if err != nil {
+		p.Report(p.currentSpan(), "%s", ErrExpectedKeyword{lexer.DIMENSIONAR})
+	}
+
+	/* Array name */
+	name, err := p.eat_token(lexer.IDENTIFIER)
+	if err != nil {
+		p.Report(p.currentSpan(), "expected array name")
+	}
+
+	/* Dimensions */
+	_, err = p.eat_token(lexer.L_BRACKET)
+	if err != nil {
+		p.Report(p.currentSpan(), "expected '[' (to declare array dimensions)")
+	}
+
+	dims, err := p.parse_expression_list()
+
+	_, err = p.eat_token(lexer.R_BRACKET)
+	if err != nil {
+		p.Report(p.currentSpan(), "expected ']' (to close array dimensions)")
+	}
+
+	if p.AnyErrorSince(checkpoint) {
+		return nil, ErrInvalidStatement
+	}
+
+	return &ast.Dimension{
+		NodeInfo:   p.infoFrom(start),
+		Name:       name,
+		Dimensions: dims,
 	}, nil
 }

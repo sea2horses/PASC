@@ -142,11 +142,11 @@ func (p *treePrinter) printStmt(stmt Stmt, depth int) {
 	case *ClearScreen:
 		p.printClearScreen(stmt, depth)
 
-	case Declaration:
-		p.printDeclaration(&stmt, depth)
-
-	case *Declaration:
-		p.printDeclaration(stmt, depth)
+		// 	case Declaration:
+		// 		p.printDeclaration(&stmt, depth)
+		//
+		// 	case *Declaration:
+		// 		p.printDeclaration(stmt, depth)
 
 	case MainFunction:
 		p.printMainFunction(&stmt, depth)
@@ -192,24 +192,24 @@ func (p *treePrinter) printAssignment(assignment *Assignment, depth int) {
 	p.printExpr(assignment.Value, depth+2)
 }
 
-func (p *treePrinter) printDeclaration(declaration *Declaration, depth int) {
-	if declaration == nil {
-		p.line(depth, "<nil Declaration>")
-		return
-	}
-
-	p.line(depth, "Declaration type=%s span=%s", formatType(declaration.Type), formatSpan(declaration.NodeSpan()))
-	if declaration.Symbol == nil {
-		p.line(depth+1, "Symbol: <nil>")
-		return
-	}
-
-	p.line(depth+1, "Symbol:")
-	p.line(depth+2, "Name: %q", declaration.Symbol.Name)
-	p.line(depth+2, "Kind: %s", formatSymbolKind(declaration.Symbol.Kind))
-	p.line(depth+2, "Mutable: %t", declaration.Symbol.Mutable)
-	p.line(depth+2, "Declared: %s", formatSpan(declaration.Symbol.Declared))
-}
+// func (p *treePrinter) printDeclaration(declaration *Declaration, depth int) {
+// 	if declaration == nil {
+// 		p.line(depth, "<nil Declaration>")
+// 		return
+// 	}
+//
+// 	p.line(depth, "Declaration type=%s span=%s", formatType(declaration.Type), formatSpan(declaration.NodeSpan()))
+// 	if declaration.Symbol == nil {
+// 		p.line(depth+1, "Symbol: <nil>")
+// 		return
+// 	}
+//
+// 	p.line(depth+1, "Symbol:")
+// 	p.line(depth+2, "Name: %q", declaration.Symbol.Name)
+// 	p.line(depth+2, "Kind: %s", formatSymbolKind(declaration.Symbol.Kind))
+// 	p.line(depth+2, "Mutable: %t", declaration.Symbol.Mutable)
+// 	p.line(depth+2, "Declared: %s", formatSpan(declaration.Symbol.Declared))
+// }
 
 func (p *treePrinter) printWhile(stmt *While, depth int) {
 	if stmt == nil {

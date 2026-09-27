@@ -26,43 +26,55 @@ func (a *Analyzer) analyze_variable(variable *ast.Variable) tast.TypedExpr {
 	}
 }
 
+func (a *Analyzer) analyze_single_decl(decl *ast.Declaration, name string, t semantic.Type) *semantic.Symbol {
+	if _, exists := a.scope.Lookup(name); exists {
+		a.Report(decl.Span, "%s", ErrSymbolAlreadyExists{Name: name}.Error())
+		return nil
+	}
+
+	symbol := &semantic.Symbol{
+		Name:     name,
+		Kind:     semantic.SymbolVariable,
+		Type:     t,
+		Declared: decl.Span,
+		Mutable:  true,
+	}
+
+	a.scope.Declare(symbol)
+	return symbol
+}
+
 func (a *Analyzer) analyze_declaration(decl *ast.Declaration) *tast.Declaration {
 	diagnostics.Dbg("Analyzing declaration")
+	ok := true
 	/* Let's declare this bitch */
 	/* Check the type exists! */
 	t := a.analyze_type_ref(decl.Type)
-
-	ok := true
-	/* Let's add it to the symbol table */
-	if _, exists := a.scope.Lookup(decl.Name); exists {
-		a.Report(decl.Span, "%s", ErrSymbolAlreadyExists{Name: decl.Name}.Error())
-		ok = false
-	}
 
 	if t == nil {
 		a.Report(decl.Type.Span, "%s", "unknown type")
 		ok = false
 	}
 
+	symbols := []*semantic.Symbol{}
+	for _, n := range decl.Names {
+		symbol := a.analyze_single_decl(decl, n, t)
+
+		if symbol == nil {
+			ok = false
+		}
+
+		symbols = append(symbols, symbol)
+	}
+
 	if !ok {
 		return nil
 	}
 
-	/* Else, let's go */
-	symbol := &semantic.Symbol{
-		Name:     decl.Name,
-		Kind:     semantic.SymbolVariable,
-		Type:     *t,
-		Declared: decl.Span,
-		Mutable:  true,
-	}
-
-	a.scope.Declare(symbol)
-
 	return &tast.Declaration{
 		NodeInfo: decl.NodeInfo,
-		Symbol:   symbol,
-		Type:     *t,
+		Symbols:  symbols,
+		Type:     t,
 	}
 }
 
@@ -113,6 +125,14 @@ func (a *Analyzer) analyze_assignment(ass *ast.Assignment) *tast.Assignment {
 
 	if !lvalue.IsMutable() {
 		a.Report(ass.NodeSpan(), ErrImmutable)
+		a.Info(lvalue.AssignmentOrigin().Span, "%s", lvalue.AssignmentOrigin().Message)
+		return nil
+	}
+
+	/* Try coercing */
+	_, ok = coerce_to(typed_expr, target.Type())
+	if !ok {
+		a.Report(ass.NodeSpan(), "%s", ErrIncorrectType{Expected: target.Type(), Got: typed_expr.Type()}.Error())
 		a.Info(lvalue.AssignmentOrigin().Span, "%s", lvalue.AssignmentOrigin().Message)
 		return nil
 	}

@@ -5,12 +5,26 @@ import (
 	"fmt"
 	tast "pseint-compiled/internal/ast_typed"
 	"pseint-compiled/internal/semantic"
+	"pseint-compiled/internal/utils"
 	"strings"
 )
 
 const (
-	RUNTIME_WRITE_FUNCTION = "Write"
+	RUNTIME_WRITE_FUNCTION            = "Write"
+	RUNTIME_WRITE_CONTINUOUS_FUNCTION = "WriteContinuous"
+	RUNTIME_SIN_FNCTION               = "math.Sin"
+	RUNTIME_COS_FUNCTION              = "math.Cos"
+	RUNTIME_TRUNC_FUNCTION            = "math.Trunc"
+
+	FOR_START = "__fl__start"
+	FOR_END   = "__fl__end"
+	FOR_STEP  = "__fl_step"
 )
+
+var timeMap map[semantic.TimeUnit]string = map[semantic.TimeUnit]string{
+	semantic.MILISEGUNDOS: "time.Millisecond",
+	semantic.SEGUNDOS:     "time.Second",
+}
 
 // ALL conversion kinds must be mapped to a runtime function
 var conversionMap map[semantic.ConversionKind]string = map[semantic.ConversionKind]string{
@@ -19,10 +33,10 @@ var conversionMap map[semantic.ConversionKind]string = map[semantic.ConversionKi
 }
 
 var typeMap map[semantic.Type]string = map[semantic.Type]string{
-	semantic.IntegerType: "int64",
-	semantic.StringType:  "string",
-	semantic.BooleanType: "bool",
-	semantic.RealType:    "float64",
+	semantic.IntegerType{}: "int64",
+	semantic.StringType{}:  "string",
+	semantic.BooleanType{}: "bool",
+	semantic.RealType{}:    "float64",
 }
 
 const (
@@ -70,12 +84,17 @@ func (cg *CodeGenerator) Generate(ast tast.Node) []byte {
 	return cg.buffer.Bytes()
 }
 
+/* TODO: Valdiation pass, don't generate code for statements with uninferred types */
 func (cg *CodeGenerator) write_node(node tast.Node) {
 	switch n := node.(type) {
 	case *tast.StringLiteral:
 		cg.write("\"%s\"", n.Value)
 	case *tast.NumberLiteral:
-		cg.write("%d.%d", n.Int, n.Frac)
+		if n.Frac != "" {
+			cg.write("%s.%s", n.Int, n.Frac)
+		} else {
+			cg.write("%s.0", n.Int)
+		}
 	case *tast.BooleanLiteral:
 		if n.Value {
 			cg.write("true")
@@ -105,8 +124,11 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 		cg.write_node(n.RHS)
 		cg.write(")")
 	case *tast.Declaration:
-		typerep, _ := typeMap[n.Symbol.Type]
-		cg.write("var %s %s", n.Symbol.Name, typerep)
+		typerep, _ := typeMap[n.Type]
+		vars := strings.Join(utils.Map(n.Symbols, func(s *semantic.Symbol) string {
+			return s.Name
+		}), ", ")
+		cg.write("var %s %s", vars, typerep)
 	case *tast.Assignment:
 		cg.write_node(n.Target)
 		if n.Declarative {
@@ -116,7 +138,11 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 		}
 		cg.write_node(n.Value)
 	case *tast.Write:
-		cg.write("%s(", WriteFn)
+		write := RUNTIME_WRITE_FUNCTION
+		if !n.Newline {
+			write = RUNTIME_WRITE_CONTINUOUS_FUNCTION
+		}
+		cg.write("%s(", write)
 		for i, exp := range n.Content {
 			if i != 0 {
 				cg.write(", ")
@@ -166,6 +192,84 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 			cg.write("}\n")
 		}
 		cg.write("}\n")
+	case *tast.TimeOut:
+		cg.write("timeout(")
+		cg.write_node(n.Amount)
+		cg.write(" * ")
+		cg.write("%s", timeMap[n.Unit])
+		cg.write(")")
+	case *tast.Dimension:
+		arrayType := n.Symbol.Type.(semantic.ArrayType)
+		elemType := semantic.Resolve(arrayType.Elem)
+		typerep, _ := typeMap[elemType]
+		cg.write("%s := NewTensor[%s]", n.Symbol.Name, typerep)
+		cg.write("(")
+		for i, dim := range n.Dimensions {
+			if i > 0 {
+				cg.write(", ")
+			}
+			cg.write("int(")
+			cg.write_node(dim)
+			cg.write(")")
+		}
+		cg.write(")")
+	case *tast.Index:
+		cg.write("*IndexTensor(")
+		cg.write_node(n.Target)
+
+		for _, index := range n.Indexes {
+			cg.write(", int(")
+			cg.write_node(index)
+			cg.write(")")
+		}
+
+		cg.write(")")
+	case *tast.Call:
+		cg.generateCall(n)
+	case *tast.For:
+		/* Open new scope */
+		cg.padding++
+		cg.write("{\n")
+		cg.write("%s := ", FOR_START)
+		cg.write_node(n.Start)
+		cg.write("\n")
+
+		cg.write("%s := ", FOR_END)
+		cg.write_node(n.Until)
+		cg.write("\n")
+
+		if n.Step != nil {
+			cg.write("%s := ", FOR_STEP)
+			cg.write_node(n.Step)
+			cg.write("\n")
+		} else {
+			cg.write("%s := 1.0\n", FOR_STEP)
+			cg.padding++
+			cg.write("if %s > %s {\n", FOR_STEP, FOR_END)
+			cg.padding--
+			cg.write("%s = -1.0\n", FOR_STEP)
+			cg.write("}\n")
+		}
+
+		cg.write("for ")
+		cg.write_node(n.Var)
+		cg.write(" := %s; ", FOR_START)
+
+		cg.write("(%s > 0 && ", FOR_STEP)
+		cg.write_node(n.Var)
+		cg.write("<= %s)", FOR_END)
+		cg.write(" || ")
+		cg.write("(%s < 0 && ", FOR_STEP)
+		cg.write_node(n.Var)
+		cg.write(" >= %s); ", FOR_END)
+
+		cg.write_node(n.Var)
+		cg.write(" += %s {", FOR_STEP)
+		cg.write_statement_block(n.Stmts)
+		cg.write("}")
+
+		cg.padding--
+		cg.write("\n}")
 	case *tast.ClearScreen:
 		cg.write("%s()", ClearFn)
 	case *tast.MainFunction:
@@ -173,6 +277,63 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 		cg.write("func main() {\n\tdefer writer.Flush()")
 		cg.write_statement_block(n.Stmts)
 		cg.write("}")
+	}
+}
+
+func (cg *CodeGenerator) generateCall(call *tast.Call) {
+	if variable, ok := call.Callable.(*tast.VariableExpr); ok {
+		if variable.Symbol.Builtin != nil {
+			cg.generateBuiltinCall(variable.Symbol.Builtin, call.Arguments)
+			return
+		}
+	}
+
+	cg.write_node(call.Callable)
+	cg.write("(")
+
+	for i, arg := range call.Arguments {
+		if i > 0 {
+			cg.write(", ")
+		}
+
+		cg.write_node(arg)
+	}
+
+	cg.write(")")
+}
+
+func (cg *CodeGenerator) generateBuiltinCall(
+	builtin *semantic.BuiltinInfo,
+	args []tast.TypedExpr,
+) {
+	switch builtin.Kind {
+	case semantic.BuiltinSin:
+		cg.write("%s(", RUNTIME_SIN_FNCTION)
+		for i, arg := range args {
+			if i > 0 {
+				cg.write(", ")
+			}
+			cg.write_node(arg)
+		}
+		cg.write(")")
+	case semantic.BuiltinCos:
+		cg.write("%s(", RUNTIME_COS_FUNCTION)
+		for i, arg := range args {
+			if i > 0 {
+				cg.write(", ")
+			}
+			cg.write_node(arg)
+		}
+		cg.write(")")
+	case semantic.BuiltinTrunc:
+		cg.write("%s(", RUNTIME_TRUNC_FUNCTION)
+		for i, arg := range args {
+			if i > 0 {
+				cg.write(", ")
+			}
+			cg.write_node(arg)
+		}
+		cg.write(")")
 	}
 }
 
@@ -188,36 +349,3 @@ func (cg *CodeGenerator) write_statement_block(stmts []tast.Stmt) {
 	cg.down_scope()
 	cg.write("\n")
 }
-
-// func (cg *CodeGenerator) newline() {
-// 	cg.buffer.WriteRune('\n')
-// 	// Write a tab
-// 	cg.buffer.Write(bytes.Repeat([]byte{'\t'}, int(cg.padding)))
-// }
-
-// func (cg *CodeGenerator) write_node(node ast.Node, buffer *bytes.Buffer) {
-// 	//
-// 	switch n := node.(type) {
-// 	case **ast.StringLiteral:
-// 		buffer.WriteRune('"')
-// 		buffer.WriteString(n.Content)
-// 		buffer.WriteRune('"')
-// 	case **ast.Write:
-// 		buffer.WriteString(RUNTIME_WRITE_FUNCTION)
-// 		buffer.WriteString("(")
-// 		cg.write_node(n.Print, buffer)
-// 		buffer.WriteString(")")
-// 		cg.newline()
-// 	case **ast.MainFunction:
-// 		fmt.Fprintf(buffer, "/* Nombre original de la función: '%s' */", n.Name)
-// 		cg.newline()
-// 		buffer.WriteString("func main() {")
-// 		cg.newline()
-// 		cg.padding++
-// 		for _, stmt := range n.Stmts {
-// 			cg.write_node(stmt, buffer)
-// 		}
-// 		cg.padding--
-// 		buffer.WriteString("}")
-// 	}
-// }

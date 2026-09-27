@@ -1,6 +1,6 @@
 <div align="center">
 
-# PASC
+![ascii-art](assets/ascii-art.png)
 
 **Compilador experimental de pseudocódigo PSeInt a ejecutables nativos mediante Go.**
 
@@ -17,6 +17,8 @@ PASC toma un archivo `.psc`, comprueba su sintaxis y sus tipos, lo traduce a Go 
 > El proyecto está en una etapa temprana (`Indev`). Ya puede ejecutar programas útiles, pero todavía no implementa todo el lenguaje de PSeInt ni debe considerarse compatible al 100 %.
 
 ## Lo mejor del proyecto
+
+![comparativa](assets/comparative.gif)
 
 - **Compilación real:** el pseudocódigo se transforma en Go y después en un ejecutable nativo.
 - **Análisis por etapas:** incluye lexer, parser, árbol sintáctico tipado, análisis semántico y generación de código.
