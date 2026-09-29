@@ -38,3 +38,52 @@ type Label struct {
 	Span    models.Span
 	Message string
 }
+
+func Expected[T any](
+	p Pattern[T],
+	expectation Expectation,
+) Pattern[T] {
+	return PatternFunc[T](func(ctx *Context) Match[T] {
+		start := ctx.Pos
+
+		result := p.Match(ctx)
+
+		if result.Kind == Matched {
+			return result
+		}
+
+		found := ctx.Peek()
+
+		return Match[T]{
+			Kind:  Failed,
+			Start: start,
+			End:   ctx.Pos,
+			Err: &ParseError{
+				Position: ctx.Pos,
+				Expected: []Expectation{expectation},
+				Found:    found,
+			},
+		}
+	})
+}
+
+func ExpectedToken(t lexer.TokenType) Expectation {
+	return Expectation{
+		Kind:  ExpectToken,
+		Token: t,
+	}
+}
+
+func ExpectedKeyword(k lexer.Keyword) Expectation {
+	return Expectation{
+		Kind:    ExpectKeyword,
+		Keyword: k,
+	}
+}
+
+func ExpectedCustom(label string) Expectation {
+	return Expectation{
+		Kind:  ExpectCustom,
+		Label: label,
+	}
+}
