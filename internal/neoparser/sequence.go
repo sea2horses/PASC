@@ -47,3 +47,27 @@ func Seq2[A, B any](
 		}
 	})
 }
+
+func Left[A, B any](
+	a Pattern[A],
+	b Pattern[B],
+) Pattern[A] {
+	return Map(
+		Seq2(a, b),
+		func(v Pair[A, B]) A {
+			return v.First
+		},
+	)
+}
+
+func Right[A, B any](
+	a Pattern[A],
+	b Pattern[B],
+) Pattern[B] {
+	return Map(
+		Seq2(a, b),
+		func(v Pair[A, B]) B {
+			return v.Second
+		},
+	)
+}
