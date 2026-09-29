@@ -217,6 +217,30 @@ func IterTensor[T Value](tensor *Tensor[T]) iter.Seq2[T, int64] {
 	}
 }
 
+/* FOR LOOPS */
+/* PseInt Has some weird behaviour with for-loops so let's do this! */
+
+func MakeIterStepless(start float64, end float64) iter.Seq[float64] {
+	var step float64
+	if end >= start {
+		step = 1.0
+	} else {
+		step = -1.0
+	}
+
+	return MakeIter(start, end, step)
+}
+
+func MakeIter(start float64, end float64, step float64) iter.Seq[float64] {
+	return func(yield func(float64) bool) {
+		for i := start; (step > 0 && i <= end) || (step < 0 && i >= end); i += step {
+			if !yield(i) {
+				return
+			}
+		}
+	}
+}
+
 /* Extra */
 
 func ClearScreen() {

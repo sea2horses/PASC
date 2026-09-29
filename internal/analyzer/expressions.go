@@ -40,6 +40,7 @@ func (a *Analyzer) analyze_expression(expr ast.Expr) tast.TypedExpr {
 	}
 
 	diagnostics.Dbg("Could not find the expression type")
+	diagnostics.Dbgfmt("%T\n", expr)
 	a.Report(expr.NodeSpan(), "expression is not valid or implemented")
 	return tast.ErrorExpr{NodeInfo: expr.Info()}
 }

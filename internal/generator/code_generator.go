@@ -16,9 +16,8 @@ const (
 	RUNTIME_COS_FUNCTION              = "math.Cos"
 	RUNTIME_TRUNC_FUNCTION            = "math.Trunc"
 
-	FOR_START = "__fl__start"
-	FOR_END   = "__fl__end"
-	FOR_STEP  = "__fl_step"
+	FOR_ITER          = "MakeIter"
+	FOR_ITER_STEPLESS = "MakeIterStepless"
 )
 
 var timeMap map[semantic.TimeUnit]string = map[semantic.TimeUnit]string{
@@ -230,41 +229,26 @@ func (cg *CodeGenerator) write_node(node tast.Node) {
 		/* Open new scope */
 		cg.padding++
 		cg.write("{\n")
-		cg.write("%s := ", FOR_START)
-		cg.write_node(n.Start)
-		cg.write("\n")
-
-		cg.write("%s := ", FOR_END)
-		cg.write_node(n.Until)
-		cg.write("\n")
-
-		if n.Step != nil {
-			cg.write("%s := ", FOR_STEP)
-			cg.write_node(n.Step)
-			cg.write("\n")
-		} else {
-			cg.write("%s := 1.0\n", FOR_STEP)
-			cg.padding++
-			cg.write("if %s > %s {\n", FOR_STEP, FOR_END)
-			cg.padding--
-			cg.write("%s = -1.0\n", FOR_STEP)
-			cg.write("}\n")
-		}
-
 		cg.write("for ")
 		cg.write_node(n.Var)
-		cg.write(" := %s; ", FOR_START)
+		cg.write(" := range ")
 
-		cg.write("(%s > 0 && ", FOR_STEP)
-		cg.write_node(n.Var)
-		cg.write("<= %s)", FOR_END)
-		cg.write(" || ")
-		cg.write("(%s < 0 && ", FOR_STEP)
-		cg.write_node(n.Var)
-		cg.write(" >= %s); ", FOR_END)
-
-		cg.write_node(n.Var)
-		cg.write(" += %s {", FOR_STEP)
+		if n.Step == nil {
+			cg.write("%s(", FOR_ITER_STEPLESS)
+			cg.write_node(n.Start)
+			cg.write(", ")
+			cg.write_node(n.Until)
+			cg.write(")")
+		} else {
+			cg.write("%s(", FOR_ITER)
+			cg.write_node(n.Start)
+			cg.write(",")
+			cg.write_node(n.Until)
+			cg.write(",")
+			cg.write_node(n.Step)
+			cg.write(")")
+		}
+		cg.write(" {")
 		cg.write_statement_block(n.Stmts)
 		cg.write("}")
 

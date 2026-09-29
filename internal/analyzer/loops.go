@@ -25,25 +25,28 @@ func (a *Analyzer) analyze_while(while *ast.While) *tast.While {
 	}
 }
 
+/* For ONLY works with floats and numeric values!! */
 func (a *Analyzer) analyze_for(f *ast.For) *tast.For {
-	exp := a.analyze_expression(f.Start)
+	_ = a.analyze_statement(f.Start)
+
+	exp := a.analyze_expression(f.Start.Target)
 	variable, ok := exp.(*tast.VariableExpr)
 	if !ok {
-		a.Report(f.Start.NodeSpan(), "Expected variable")
+		a.Report(f.Start.NodeSpan(), "expected variable")
 	}
 
-	start := a.analyze_expression(f.Start)
+	start := a.analyze_expression(f.Start.Content)
 	end := a.analyze_expression(f.Until)
 
-	targetType := variable.Type()
+	targetType := semantic.RealType{}
 
 	start, ok = coerce_to(start, targetType)
 	if !ok {
-		a.Report(start.NodeSpan(), "Expected antoher typ")
+		a.Report(start.NodeSpan(), "%s", ErrIncorrectType{Expected: targetType, Got: start.Type()})
 	}
 	end, ok = coerce_to(end, targetType)
 	if !ok {
-		a.Report(end.NodeSpan(), "Expected antoher typ")
+		a.Report(end.NodeSpan(), "%s", ErrIncorrectType{Expected: targetType, Got: end.Type()})
 	}
 
 	var step tast.TypedExpr
@@ -52,18 +55,11 @@ func (a *Analyzer) analyze_for(f *ast.For) *tast.For {
 		step = a.analyze_expression(f.Step)
 		step, ok = coerce_to(step, targetType)
 		if !ok {
-			a.Report(end.NodeSpan(), "Expected antoher typ")
-		}
-	} else {
-		step = &tast.NumberLiteral{
-			Int: "1",
-		}
-
-		step, ok = coerce_to(step, targetType)
-		if !ok {
-			a.Report(end.NodeSpan(), "Expected antoher typ")
+			a.Report(end.NodeSpan(), "%s", ErrIncorrectType{Expected: targetType, Got: step.Type()})
 		}
 	}
+
+	/* ALL must coerce to float */
 
 	return &tast.For{
 		Var:   variable,

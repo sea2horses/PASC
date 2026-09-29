@@ -49,7 +49,7 @@ func (s *Scope) Declare(symbol *Symbol) bool {
 		panic("GAVE A NIL SYMBOL! CANNOT DECLARE.")
 	}
 
-	diagnostics.Dbgfmt("Declared new symbol: %+v", symbol)
+	diagnostics.Dbgfmt("Declared new symbol: %+v\n", symbol)
 
 	key := NormalizeName(symbol.Name)
 	if _, exists := s.symbols[key]; exists {
