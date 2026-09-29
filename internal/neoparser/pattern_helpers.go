@@ -329,3 +329,34 @@ func OneOf[T any](patterns ...Pattern[T]) Pattern[T] {
 		}
 	})
 }
+
+func Bind[A, B any](
+	first Pattern[A],
+	next func(A) Pattern[B],
+) Pattern[B] {
+	return PatternFunc[B](func(ctx *Context) Match[B] {
+		start := ctx.Pos
+
+		a := first.Match(ctx)
+
+		if a.Kind != Matched {
+			ctx.Reset(start)
+
+			return Match[B]{
+				Kind:  a.Kind,
+				Start: start,
+				End:   a.End,
+				Err:   a.Err,
+			}
+		}
+
+		b := next(a.Value).Match(ctx)
+
+		if b.Kind != Matched {
+			return b
+		}
+
+		b.Start = start
+		return b
+	})
+}
