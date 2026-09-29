@@ -29,8 +29,8 @@ func Tok(expected lexer.TokenType) Pattern[lexer.Token] {
 		if tok.Type != expected {
 			return Match[lexer.Token]{
 				Kind:  NoMatch,
-				Start: tok.Span.Start.Offset,
-				End:   tok.Span.End.Offset,
+				Start: start,
+				End:   ctx.Pos,
 			}
 		}
 
@@ -39,8 +39,8 @@ func Tok(expected lexer.TokenType) Pattern[lexer.Token] {
 		return Match[lexer.Token]{
 			Kind:  Matched,
 			Value: *tok,
-			Start: tok.Span.Start.Offset,
-			End:   tok.Span.End.Offset,
+			Start: start,
+			End:   ctx.Pos,
 		}
 	})
 }
@@ -61,8 +61,8 @@ func Kw(expected lexer.Keyword) Pattern[lexer.Keyword] {
 		if tok.Type != lexer.KEYWORD {
 			return Match[lexer.Keyword]{
 				Kind:  NoMatch,
-				Start: tok.Span.Start.Offset,
-				End:   tok.Span.End.Offset,
+				Start: start,
+				End:   ctx.Pos,
 			}
 		}
 
@@ -71,16 +71,16 @@ func Kw(expected lexer.Keyword) Pattern[lexer.Keyword] {
 		if !ok || kw != expected {
 			return Match[lexer.Keyword]{
 				Kind:  NoMatch,
-				Start: tok.Span.Start.Offset,
-				End:   tok.Span.End.Offset,
+				Start: start,
+				End:   ctx.Pos,
 			}
 		}
 
 		return Match[lexer.Keyword]{
 			Kind:  Matched,
 			Value: kw,
-			Start: tok.Span.Start.Offset,
-			End:   tok.Span.End.Offset,
+			Start: start,
+			End:   ctx.Pos,
 		}
 	})
 }

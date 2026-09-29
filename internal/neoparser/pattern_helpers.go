@@ -64,3 +64,78 @@ func Optional[T any](p Pattern[T]) Pattern[OptionalValue[T]] {
 		}
 	})
 }
+
+func Many[T any](p Pattern[T]) Pattern[[]T] {
+	return PatternFunc[[]T](func(ctx *Context) Match[[]T] {
+		start := ctx.Pos
+		values := []T{}
+
+		for {
+			before := ctx.Pos
+			result := p.Match(ctx)
+
+			if result.Kind == Failed {
+				return Match[[]T]{
+					Kind:  Failed,
+					Start: start,
+					End:   result.End,
+					Err:   result.Err,
+				}
+			}
+
+			if result.Kind == NoMatch {
+				ctx.Reset(before)
+				break
+			}
+
+			if ctx.Pos == before {
+				panic("Many() received a pattern that matched without consuming input")
+			}
+
+			values = append(values, result.Value)
+		}
+
+		return Match[[]T]{
+			Kind:  Matched,
+			Value: values,
+			Start: start,
+			End:   ctx.Pos,
+		}
+	})
+}
+
+func Many1[T any](p Pattern[T]) Pattern[[]T] {
+	return PatternFunc[[]T](func(ctx *Context) Match[[]T] {
+		start := ctx.Pos
+
+		first := p.Match(ctx)
+
+		if first.Kind != Matched {
+			ctx.Reset(start)
+
+			return Match[[]T]{
+				Kind:  first.Kind,
+				Start: start,
+				End:   first.End,
+				Err:   first.Err,
+			}
+		}
+
+		values := []T{first.Value}
+
+		rest := Many(p).Match(ctx)
+
+		if rest.Kind == Failed {
+			return rest
+		}
+
+		values = append(values, rest.Value...)
+
+		return Match[[]T]{
+			Kind:  Matched,
+			Value: values,
+			Start: start,
+			End:   ctx.Pos,
+		}
+	})
+}
