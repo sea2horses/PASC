@@ -139,3 +139,107 @@ func Many1[T any](p Pattern[T]) Pattern[[]T] {
 		}
 	})
 }
+
+func SepBy[T, S any](
+	item Pattern[T],
+	separator Pattern[S],
+) Pattern[[]T] {
+	return PatternFunc[[]T](func(ctx *Context) Match[[]T] {
+		start := ctx.Pos
+		values := []T{}
+
+		first := item.Match(ctx)
+
+		if first.Kind == NoMatch {
+			ctx.Reset(start)
+
+			return Match[[]T]{
+				Kind:  Matched,
+				Value: values,
+				Start: start,
+				End:   start,
+			}
+		}
+
+		if first.Kind == Failed {
+			return Match[[]T]{
+				Kind:  Failed,
+				Start: start,
+				End:   first.End,
+				Err:   first.Err,
+			}
+		}
+
+		values = append(values, first.Value)
+
+		for {
+			beforeSeparator := ctx.Pos
+
+			sep := separator.Match(ctx)
+
+			if sep.Kind == NoMatch {
+				ctx.Reset(beforeSeparator)
+				break
+			}
+
+			if sep.Kind == Failed {
+				return Match[[]T]{
+					Kind:  Failed,
+					Start: start,
+					End:   sep.End,
+					Err:   sep.Err,
+				}
+			}
+
+			next := item.Match(ctx)
+
+			if next.Kind != Matched {
+				return Match[[]T]{
+					Kind:  Failed,
+					Start: start,
+					End:   ctx.Pos,
+					Err: &ParseError{
+						Position: ctx.Pos,
+						Message:  "expected item after separator",
+					},
+				}
+			}
+
+			values = append(values, next.Value)
+		}
+
+		return Match[[]T]{
+			Kind:  Matched,
+			Value: values,
+			Start: start,
+			End:   ctx.Pos,
+		}
+	})
+}
+
+func SepBy1[T, S any](
+	item Pattern[T],
+	separator Pattern[S],
+) Pattern[[]T] {
+	return PatternFunc[[]T](func(ctx *Context) Match[[]T] {
+		start := ctx.Pos
+
+		result := SepBy(item, separator).Match(ctx)
+
+		if result.Kind != Matched {
+			return result
+		}
+
+		if len(result.Value) == 0 {
+			ctx.Reset(start)
+
+			return Match[[]T]{
+				Kind:  NoMatch,
+				Start: start,
+				End:   start,
+			}
+		}
+
+		return result
+	})
+}
