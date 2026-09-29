@@ -2,6 +2,10 @@ package neoparser
 
 import "pseint-compiled/internal/lexer"
 
+type Pattern interface {
+	Match(*Context) bool
+}
+
 type TokenPattern struct {
 	Type lexer.TokenType
 }

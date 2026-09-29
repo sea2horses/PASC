@@ -1,31 +1,27 @@
 package neoparser
 
-import "pseint-compiled/internal/lexer"
-
-type Context struct{}
-
-type Pattern interface {
-	Match(*Context) bool
-}
-
-type Captures map[string]any
-
 type MatchKind uint8
 
 const (
 	NoMatch MatchKind = iota
-	Match
+	Matched
 	Failed
 )
 
-type Cursor struct {
-	Tokens []lexer.Token
-	Pos    int
+type Match[T any] struct {
+	Kind  MatchKind
+	Value T
+
+	Start uint32
+	End   uint32
+
+	// Err    *ParseError
 }
 
-type Result[T any] struct {
-	Value     T
-	Next      int
-	MatchKind MatchKind
-	// Error    *ParseError
+func (m *Match[T]) OK() bool {
+	return m.Kind == Matched
+}
+
+func (m *Match[T]) Consumed() bool {
+	return m.End > m.Start
 }
