@@ -292,3 +292,40 @@ func Between[L, T, R any](
 		}
 	})
 }
+
+func OneOf[T any](patterns ...Pattern[T]) Pattern[T] {
+	return PatternFunc[T](func(ctx *Context) Match[T] {
+		start := ctx.Pos
+
+		var best *Match[T]
+
+		for _, pattern := range patterns {
+			ctx.Reset(start)
+
+			result := pattern.Match(ctx)
+
+			if result.Kind == Matched {
+				return result
+			}
+
+			if result.Kind == Failed {
+				if best == nil || result.End > best.End {
+					copy := result
+					best = &copy
+				}
+			}
+		}
+
+		ctx.Reset(start)
+
+		if best != nil {
+			return *best
+		}
+
+		return Match[T]{
+			Kind:  NoMatch,
+			Start: start,
+			End:   start,
+		}
+	})
+}
