@@ -243,3 +243,52 @@ func SepBy1[T, S any](
 		return result
 	})
 }
+
+func Between[L, T, R any](
+	left Pattern[L],
+	content Pattern[T],
+	right Pattern[R],
+) Pattern[T] {
+	return PatternFunc[T](func(ctx *Context) Match[T] {
+		start := ctx.Pos
+
+		l := left.Match(ctx)
+		if l.Kind != Matched {
+			ctx.Reset(start)
+
+			return Match[T]{
+				Kind:  l.Kind,
+				Start: start,
+				End:   l.End,
+				Err:   l.Err,
+			}
+		}
+
+		value := content.Match(ctx)
+		if value.Kind != Matched {
+			return Match[T]{
+				Kind:  Failed,
+				Start: start,
+				End:   value.End,
+				Err:   value.Err,
+			}
+		}
+
+		r := right.Match(ctx)
+		if r.Kind != Matched {
+			return Match[T]{
+				Kind:  Failed,
+				Start: start,
+				End:   r.End,
+				Err:   r.Err,
+			}
+		}
+
+		return Match[T]{
+			Kind:  Matched,
+			Value: value.Value,
+			Start: start,
+			End:   ctx.Pos,
+		}
+	})
+}
