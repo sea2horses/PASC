@@ -1,27 +1,11 @@
 package neoparser
 
-import "pseint-compiled/internal/lexer"
-
-type Pattern interface {
-	Match(*Context) bool
+type Pattern[T any] interface {
+	Match(*Context) Match[T]
 }
 
-type TokenPattern struct {
-	Type lexer.TokenType
-}
+type PatternFunc[T any] func(*Context) Match[T]
 
-func Tok(t lexer.TokenType) *TokenPattern {
-	return &TokenPattern{
-		Type: t,
-	}
-}
-
-type KeywordPattern struct {
-	Keyword lexer.Keyword
-}
-
-func Kw(k lexer.Keyword) *KeywordPattern {
-	return &KeywordPattern{
-		Keyword: k,
-	}
+func (f PatternFunc[T]) Match(c *Context) Match[T] {
+	return f(c)
 }
