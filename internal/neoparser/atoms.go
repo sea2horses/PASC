@@ -6,6 +6,16 @@ import (
 	"pseint-compiled/internal/models"
 )
 
+func Atom() Pattern[ast.Expr] {
+	return OneOf[ast.Expr](
+		Identifier(),
+		StringLiteral(),
+		NumberLiteral(),
+		BooleanLiteral(),
+		ParenthesizedExpression(),
+	)
+}
+
 func StringLiteral() Pattern[ast.Expr] {
 	return Map(
 		Tok(lexer.STRING_LITERAL),
@@ -49,5 +59,39 @@ func NumberLiteral() Pattern[ast.Expr] {
 				},
 			}
 		},
+	)
+}
+
+func BooleanLiteral() Pattern[ast.Expr] {
+	return Map(
+		Tok(lexer.BOOLEAN_LITERAL),
+		func(tok lexer.Token) ast.Expr {
+			value, _ := lexer.MapToBool([]rune(tok.Value))
+			return &ast.BoolLiteral{
+				Value: value,
+				NodeInfo: ast.NodeInfo{
+					Span: tok.Span,
+				},
+			}
+		},
+	)
+}
+
+func Identifier() Pattern[ast.Expr] {
+	return Map(Tok(lexer.IDENTIFIER), func(t lexer.Token) ast.Expr {
+		return &ast.Variable{
+			Name: t.Value,
+			NodeInfo: ast.NodeInfo{
+				Span: t.Span,
+			},
+		}
+	})
+}
+
+func ParenthesizedExpression() Pattern[ast.Expr] {
+	return Between(
+		Tok(lexer.L_PARENTHESES),
+		Expression(),
+		Tok(lexer.R_PARENTHESES),
 	)
 }
