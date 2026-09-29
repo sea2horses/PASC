@@ -1,5 +1,7 @@
 package neoparser
 
+import "pseint-compiled/internal/models"
+
 func Map[A, B any](p Pattern[A], fn func(A) B) Pattern[B] {
 	return PatternFunc[B](func(ctx *Context) Match[B] {
 		result := p.Match(ctx)
@@ -22,9 +24,44 @@ func Map[A, B any](p Pattern[A], fn func(A) B) Pattern[B] {
 	})
 }
 
+func MapWithSpan[A, B any](
+	p Pattern[A],
+	fn func(A, models.Span) B,
+) Pattern[B] {
+	return PatternFunc[B](func(ctx *Context) Match[B] {
+		result := p.Match(ctx)
+
+		if result.Kind != Matched {
+			return Match[B]{
+				Kind:  result.Kind,
+				Start: result.Start,
+				End:   result.End,
+				Err:   result.Err,
+			}
+		}
+
+		span := ctx.SpanSince(result.Start)
+
+		return Match[B]{
+			Kind:  Matched,
+			Value: fn(result.Value, span),
+			Start: result.Start,
+			End:   result.End,
+		}
+	})
+}
+
 type OptionalValue[T any] struct {
 	Value T
 	Some  bool
+}
+
+func (o OptionalValue[T]) Or(def T) T {
+	if o.Some {
+		return o.Value
+	} else {
+		return def
+	}
 }
 
 func Optional[T any](p Pattern[T]) Pattern[OptionalValue[T]] {

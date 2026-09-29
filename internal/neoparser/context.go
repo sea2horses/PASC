@@ -1,6 +1,9 @@
 package neoparser
 
-import "pseint-compiled/internal/lexer"
+import (
+	"pseint-compiled/internal/lexer"
+	"pseint-compiled/internal/models"
+)
 
 type Context struct {
 	Tokens []lexer.Token
@@ -41,4 +44,16 @@ func (c *Context) Mark() uint32 {
 
 func (c *Context) Reset(pos uint32) {
 	c.Pos = pos
+}
+
+func (c *Context) Span(start uint32, end uint32) models.Span {
+	/* Get span from other token */
+	t1 := c.PeekAt(start)
+	t2 := c.PeekAt(end)
+
+	if t1 == nil || t2 == nil {
+		return models.Span{}
+	}
+
+	return models.JoinSpans(t1.Span, t2.Span)
 }
