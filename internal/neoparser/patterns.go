@@ -84,3 +84,17 @@ func Kw(expected lexer.Keyword) Pattern[lexer.Keyword] {
 		}
 	})
 }
+
+func Newline() Pattern[lexer.Token] {
+	return Expected(
+		Tok(lexer.NEWLINE),
+		ExpectedCustom("newline"),
+	)
+}
+
+/* Just in case */
+func Custom[T any](
+	fn func(*Context) Match[T],
+) Pattern[T] {
+	return PatternFunc[T](fn)
+}
