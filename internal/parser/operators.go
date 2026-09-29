@@ -51,6 +51,9 @@ func (p *Parser) parse_operator_type() operators.OperatorType {
 		/* Restart position */
 		p.position = init_position
 		return operators.UNRECOGNIZED
+	case lexer.MODULO:
+		p.eat_token(lexer.MODULO)
+		return operators.MODULO
 	case lexer.EX_MARK:
 		p.eat_token(lexer.EX_MARK)
 		if tok, err := p.get(); err == nil && tok.Type == lexer.EQUALS {

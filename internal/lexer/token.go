@@ -30,6 +30,7 @@ const (
 	MINUS    // -
 	ASTERISK // *
 	SLASH    // /
+	MODULO   // %
 	// Comparison
 	L_ANGLE   // <
 	R_ANGLE   // >
@@ -70,5 +71,6 @@ var charMap map[rune]TokenType = map[rune]TokenType{
 	'[':  L_BRACKET,
 	']':  R_BRACKET,
 	':':  COLON,
+	'%':  MODULO,
 	'\n': NEWLINE,
 }
