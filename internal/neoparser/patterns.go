@@ -85,7 +85,7 @@ func Kw(expected lexer.Keyword) Pattern[lexer.Keyword] {
 	})
 }
 
-func Identifier() Pattern[string] {
+func Name() Pattern[string] {
 	return Map(Tok(lexer.IDENTIFIER), func(t lexer.Token) string {
 		return t.Value
 	})

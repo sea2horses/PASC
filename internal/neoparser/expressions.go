@@ -4,6 +4,7 @@ import (
 	"pseint-compiled/internal/ast"
 	"pseint-compiled/internal/lexer"
 	"pseint-compiled/internal/models"
+	"pseint-compiled/internal/semantic"
 	"slices"
 )
 
@@ -89,4 +90,106 @@ func Call(target ast.Expr) Pattern[ast.Expr] {
 	)
 }
 
-func Expression() Pattern[ast.Expr] {}
+func Expression() Pattern[ast.Expr] {
+	return PatternFunc[ast.Expr](func(ctx *Context) Match[ast.Expr] {
+		operandStack := []ast.Expr{}
+		operatorStack := []ast.Operator{}
+
+		start := ctx.Pos
+
+		execute := func() {
+			n := len(operandStack)
+
+			lhs := operandStack[n-2]
+			rhs := operandStack[n-1]
+			operandStack = operandStack[:n-2]
+
+			n = len(operatorStack)
+			op := operatorStack[n-1]
+			operatorStack = operatorStack[:n-1]
+
+			expr := &ast.BinaryOperation{
+				NodeInfo: ast.NodeInfo{
+					Span: models.JoinSpans(
+						lhs.NodeSpan(),
+						rhs.NodeSpan(),
+						op.NodeSpan(),
+					),
+				},
+				LHS: lhs,
+				Op:  op,
+				RHS: rhs,
+			}
+
+			operandStack = append(operandStack, expr)
+		}
+
+		// Parse the first operand
+		first := Operand().Match(ctx)
+
+		if !first.OK() {
+			return Match[ast.Expr]{
+				Kind:  Failed,
+				Start: start,
+				End:   ctx.Pos,
+				Err:   first.Err,
+			}
+		}
+
+		operandStack = append(operandStack, first.Value)
+
+		for {
+			operator := BinaryOperator().Match(ctx)
+
+			if !operator.OK() {
+				// Assuming Failed means ordinary no-match.
+				// Committed/fatal errors should be propagated.
+				break
+			}
+
+			current := operator.Value
+			currentPrec := semantic.BinaryOperatorPrecedence(current.Type)
+
+			// Reduce pending operators
+			for len(operatorStack) > 0 {
+				top := operatorStack[len(operatorStack)-1]
+				topPrec := semantic.BinaryOperatorPrecedence(top.Type)
+
+				// Assuming all binary operators are left-associative
+				if topPrec < currentPrec {
+					break
+				}
+
+				execute()
+			}
+
+			operatorStack = append(operatorStack, *current)
+
+			// Once an operator matches, its RHS is mandatory
+			operand := Operand().Match(ctx)
+
+			if !operand.OK() {
+				return Match[ast.Expr]{
+					Kind:  Failed,
+					Start: start,
+					End:   ctx.Pos,
+					Err:   operand.Err,
+				}
+			}
+
+			operandStack = append(operandStack, operand.Value)
+		}
+
+		// Reduce remaining operators
+		for len(operatorStack) > 0 {
+			execute()
+		}
+
+		return Match[ast.Expr]{
+			Kind:  Matched,
+			Value: operandStack[0],
+			Start: start,
+			End:   ctx.Pos,
+		}
+	})
+}
