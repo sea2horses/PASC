@@ -1,6 +1,9 @@
 package neoparser
 
-import "pseint-compiled/internal/lexer"
+import (
+	"pseint-compiled/internal/ast"
+	"pseint-compiled/internal/lexer"
+)
 
 type Pattern[T any] interface {
 	Match(*Context) Match[T]
@@ -95,6 +98,22 @@ func Newline() Pattern[lexer.Token] {
 	return Expected(
 		Tok(lexer.NEWLINE),
 		ExpectedCustom("newline"),
+	)
+}
+
+func Type() Pattern[*ast.TypeRef] {
+	return Map(
+		Locate(
+			Name(),
+		),
+		func(name Located[string]) *ast.TypeRef {
+			return &ast.TypeRef{
+				NodeInfo: ast.NodeInfo{
+					Span: name.Span,
+				},
+				Name: name.Value,
+			}
+		},
 	)
 }
 
