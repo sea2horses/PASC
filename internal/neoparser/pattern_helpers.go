@@ -51,6 +51,18 @@ func MapWithSpan[A, B any](
 	})
 }
 
+func MapWithLocation[A, B any](
+	p Pattern[A],
+	fn func(A, models.Span) B,
+) Pattern[B] {
+	return Map(
+		Locate(p),
+		func(l Located[A]) B {
+			return fn(l.Value, l.Span)
+		},
+	)
+}
+
 func If[A, B any](
 	p Pattern[A],
 	val B,

@@ -3,10 +3,13 @@ package neoparser
 import (
 	"pseint-compiled/internal/ast"
 	"pseint-compiled/internal/lexer"
+	"pseint-compiled/internal/models"
 )
 
 func Statement() Pattern[ast.Stmt] {
-
+	return OneOf(
+		Declaration(),
+	)
 }
 
 func StatementBlock() Pattern[[]ast.Stmt] {
@@ -45,7 +48,7 @@ func MainFunction() Pattern[*ast.MainFunction] {
 	)
 }
 
-func Declaration() Pattern[*ast.Declaration] {
+func Declaration() Pattern[ast.Stmt] {
 	return Map(
 		Locate(
 			After(
@@ -62,13 +65,34 @@ func Declaration() Pattern[*ast.Declaration] {
 				),
 			),
 		),
-		func(p Located[Pair[[]string, *ast.TypeRef]]) *ast.Declaration {
+		func(p Located[Pair[[]string, *ast.TypeRef]]) ast.Stmt {
 			return &ast.Declaration{
 				NodeInfo: ast.NodeInfo{
 					Span: p.Span,
 				},
 				Names: p.Value.First,
 				Type:  p.Value.Second,
+			}
+		},
+	)
+}
+
+func Assignment() Pattern[ast.Stmt] {
+	return MapWithLocation(
+		Seq2(
+			Expression(),
+			Right(
+				Tok(lexer.EQUALS),
+				Expression(),
+			),
+		),
+		func(p Pair[ast.Expr, ast.Expr], span models.Span) ast.Stmt {
+			return &ast.Assignment{
+				NodeInfo: ast.NodeInfo{
+					Span: span,
+				},
+				Target:  p.First,
+				Content: p.Second,
 			}
 		},
 	)
