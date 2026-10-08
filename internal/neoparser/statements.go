@@ -13,6 +13,12 @@ func Statement() Pattern[ast.Stmt] {
 		Assignment(),
 		Write(),
 		Read(),
+		IfStmt(),
+		While(),
+		For(),
+		Switch(),
+		Dimension(),
+		Timeout(),
 	)
 }
 
@@ -155,6 +161,24 @@ func Timeout() Pattern[ast.Stmt] {
 				},
 				Amount: p.First,
 				Unit:   p.Second,
+			}
+		},
+	)
+}
+
+func ClearScreen() Pattern[ast.Stmt] {
+	return Map(
+		Locate(
+			AsAny(Seq2(
+				Kw(lexer.BORRAR),
+				Kw(lexer.PANTALLA),
+			)),
+		),
+		func(p Located[any]) ast.Stmt {
+			return &ast.ClearScreen{
+				NodeInfo: ast.NodeInfo{
+					Span: p.Span,
+				},
 			}
 		},
 	)
