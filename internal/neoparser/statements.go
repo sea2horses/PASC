@@ -109,3 +109,31 @@ func Assignment() Pattern[ast.Stmt] {
 		},
 	)
 }
+
+func Dimension() Pattern[ast.Stmt] {
+	return MapWithLocation(
+		After(
+			Kw(lexer.DIMENSIONAR),
+			Seq2(
+				Name(),
+				Between(
+					Tok(lexer.L_BRACKET),
+					SepBy1(
+						Expression(),
+						Tok(lexer.COMMA),
+					),
+					Tok(lexer.R_BRACKET),
+				),
+			),
+		),
+		func(p Pair[string, []ast.Expr], span models.Span) ast.Stmt {
+			return &ast.Dimension{
+				NodeInfo: ast.NodeInfo{
+					Span: span,
+				},
+				Name:       p.First,
+				Dimensions: p.Second,
+			}
+		},
+	)
+}
