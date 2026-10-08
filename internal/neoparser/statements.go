@@ -4,6 +4,7 @@ import (
 	"pseint-compiled/internal/ast"
 	"pseint-compiled/internal/lexer"
 	"pseint-compiled/internal/models"
+	"pseint-compiled/internal/semantic"
 )
 
 func Statement() Pattern[ast.Stmt] {
@@ -133,6 +134,27 @@ func Dimension() Pattern[ast.Stmt] {
 				},
 				Name:       p.First,
 				Dimensions: p.Second,
+			}
+		},
+	)
+}
+
+func Timeout() Pattern[ast.Stmt] {
+	return MapWithLocation(
+		After(
+			Kw(lexer.ESPERAR),
+			Seq2(
+				Expression(),
+				TimeUnit(),
+			),
+		),
+		func(p Pair[ast.Expr, semantic.TimeUnit], span models.Span) ast.Stmt {
+			return &ast.TimeOut{
+				NodeInfo: ast.NodeInfo{
+					Span: span,
+				},
+				Amount: p.First,
+				Unit:   p.Second,
 			}
 		},
 	)
