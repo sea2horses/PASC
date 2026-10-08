@@ -96,3 +96,54 @@ func While() Pattern[ast.Stmt] {
 		},
 	)
 }
+
+func For() Pattern[ast.Stmt] {
+	return Map(
+		Seq2(
+			Locate(
+				Left(
+					Seq3(
+						Right(
+							Kw(lexer.PARA),
+							Assignment(),
+						),
+						Right(
+							Kw(lexer.HASTA),
+							Expression(),
+						),
+						Optional(
+							Right(
+								Seq2(
+									Kw(lexer.CON),
+									Kw(lexer.PASO),
+								),
+								Expression(),
+							),
+						),
+					),
+					Optional(Kw(lexer.HACER)),
+				),
+			),
+			Left(
+				StatementBlock(),
+				Seq2(
+					Newline(),
+					Kw(lexer.FINPARA),
+				),
+			),
+		),
+		func(t Pair[Located[Trio[ast.Stmt, ast.Expr, OptionalValue[ast.Expr]]], []ast.Stmt]) ast.Stmt {
+			header := t.First.Value
+
+			return &ast.For{
+				NodeInfo: ast.NodeInfo{
+					Span: t.First.Span,
+				},
+				Start: header.First.(*ast.Assignment),
+				Until: header.Second,
+				Step:  header.Third.Or(nil),
+				Stmts: t.Second,
+			}
+		},
+	)
+}
