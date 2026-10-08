@@ -445,3 +445,59 @@ func Locate[T any](p Pattern[T]) Pattern[Located[T]] {
 		}
 	})
 }
+
+func Peek[T any](pattern Pattern[T]) Pattern[T] {
+	return PatternFunc[T](func(ctx *Context) Match[T] {
+		start := ctx.Pos
+
+		result := pattern.Match(ctx)
+
+		ctx.Pos = start
+
+		return result
+	})
+}
+
+func Until[T any, U any](
+	pattern Pattern[T],
+	terminator Pattern[U],
+) Pattern[[]T] {
+	return PatternFunc[[]T](func(ctx *Context) Match[[]T] {
+		start := ctx.Pos
+		values := []T{}
+
+		for {
+			end := Peek(terminator).Match(ctx)
+
+			if end.OK() {
+				break
+			}
+
+			result := pattern.Match(ctx)
+
+			if !result.OK() {
+				return Match[[]T]{
+					Kind:  result.Kind,
+					Start: start,
+					End:   ctx.Pos,
+					Err:   result.Err,
+				}
+			}
+
+			if ctx.Pos == result.Start {
+				// Prevent an infinite loop if the pattern
+				// succeeds without consuming tokens.
+				panic("Until: pattern consumed no tokens")
+			}
+
+			values = append(values, result.Value)
+		}
+
+		return Match[[]T]{
+			Kind:  Matched,
+			Value: values,
+			Start: start,
+			End:   ctx.Pos,
+		}
+	})
+}

@@ -147,3 +147,87 @@ func For() Pattern[ast.Stmt] {
 		},
 	)
 }
+
+func Switch() Pattern[ast.Stmt] {
+	return Map(
+		Left(
+			Seq3(
+				Locate(
+					Between(
+						Kw(lexer.SEGUN),
+						Expression(),
+						Optional(Kw(lexer.HACER)),
+					),
+				),
+				Many(
+					SwitchCase(),
+				),
+				Optional(
+					Right(
+						DefaultHeader(),
+						StatementBlock(),
+					),
+				),
+			),
+			Kw(lexer.FINSEGUN),
+		),
+		func(t Trio[Located[ast.Expr], []*ast.Case, OptionalValue[[]ast.Stmt]]) ast.Stmt {
+			return &ast.Switch{
+				NodeInfo: ast.NodeInfo{
+					Span: t.First.Span,
+				},
+				Base:    t.First.Value,
+				Cases:   t.Second,
+				Default: t.Third.Or(nil),
+			}
+		},
+	)
+}
+
+func CaseHeader() Pattern[ast.Expr] {
+	return Left(
+		Expression(),
+		Tok(lexer.COLON),
+	)
+}
+
+func DefaultHeader() Pattern[any] {
+	return AsAny(Seq2(
+		Seq3(
+			Kw(lexer.DE),
+			Kw(lexer.OTRO),
+			Kw(lexer.MODO),
+		),
+		Tok(lexer.COLON),
+	))
+}
+
+func SwitchCase() Pattern[*ast.Case] {
+	return Map(
+		Seq2(
+			/* Header */
+			Locate(
+				CaseHeader(),
+			),
+			Until(
+				Left(
+					Statement(),
+					Newline(),
+				),
+				OneOf(
+					AsAny(CaseHeader()),
+					DefaultHeader(),
+				),
+			),
+		),
+		func(c Pair[Located[ast.Expr], []ast.Stmt]) *ast.Case {
+			return &ast.Case{
+				NodeInfo: ast.NodeInfo{
+					Span: c.First.Span,
+				},
+				Clause: c.First.Value,
+				Stmts:  c.Second,
+			}
+		},
+	)
+}
