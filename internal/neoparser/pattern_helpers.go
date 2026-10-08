@@ -428,3 +428,35 @@ func Bind[A, B any](
 		return b
 	})
 }
+
+type Located[T any] struct {
+	Value T
+	Span  models.Span
+}
+
+func Locate[T any](p Pattern[T]) Pattern[Located[T]] {
+	return PatternFunc[Located[T]](func(ctx *Context) Match[Located[T]] {
+		result := p.Match(ctx)
+
+		if result.Kind != Matched {
+			return Match[Located[T]]{
+				Kind:  result.Kind,
+				Start: result.Start,
+				End:   result.End,
+				Err:   result.Err,
+			}
+		}
+
+		span := ctx.Span(result.Start, result.End)
+
+		return Match[Located[T]]{
+			Kind: Matched,
+			Value: Located[T]{
+				Value: result.Value,
+				Span:  span,
+			},
+			Start: result.Start,
+			End:   result.End,
+		}
+	})
+}
