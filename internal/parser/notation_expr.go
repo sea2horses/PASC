@@ -4,7 +4,7 @@ import (
 	"pseint-compiled/internal/ast"
 	"pseint-compiled/internal/diagnostics"
 	"pseint-compiled/internal/models"
-	"pseint-compiled/internal/operators"
+	"pseint-compiled/internal/semantic"
 	"slices"
 )
 
@@ -32,7 +32,7 @@ func (p *Parser) read_infix_to_postfix() ([]ast.Node, error) {
 
 		/* Else, if the current operator is lesser or equal than the one on top, we pop the stack */
 		for len(operator_stack) > 0 &&
-			operators.BinaryOperatorPrecedence(operator_stack[len(operator_stack)-1].Type) >= operators.BinaryOperatorPrecedence(op.Type) {
+			semantic.BinaryOperatorPrecedence(operator_stack[len(operator_stack)-1].Type) >= semantic.BinaryOperatorPrecedence(op.Type) {
 			/* Append top operator to postfix stack */
 			postfix_stack = append(postfix_stack, operator_stack[len(operator_stack)-1])
 			/* Chop last. element */
