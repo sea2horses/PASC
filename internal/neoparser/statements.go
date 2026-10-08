@@ -44,3 +44,32 @@ func MainFunction() Pattern[*ast.MainFunction] {
 		},
 	)
 }
+
+func Declaration() Pattern[*ast.Declaration] {
+	return Map(
+		Locate(
+			After(
+				Kw(lexer.DEFINIR),
+				Seq2(
+					SepBy1(
+						Name(),
+						Tok(lexer.COMMA),
+					),
+					Right(
+						Kw(lexer.COMO),
+						Type(),
+					),
+				),
+			),
+		),
+		func(p Located[Pair[[]string, *ast.TypeRef]]) *ast.Declaration {
+			return &ast.Declaration{
+				NodeInfo: ast.NodeInfo{
+					Span: p.Span,
+				},
+				Names: p.Value.First,
+				Type:  p.Value.Second,
+			}
+		},
+	)
+}

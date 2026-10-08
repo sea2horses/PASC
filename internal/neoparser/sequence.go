@@ -71,3 +71,10 @@ func Right[A, B any](
 		},
 	)
 }
+
+func After[A, B any](
+	a Pattern[A],
+	b Pattern[B],
+) Pattern[B] {
+	return Right(a, b)
+}
