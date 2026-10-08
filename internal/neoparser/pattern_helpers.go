@@ -24,33 +24,6 @@ func Map[A, B any](p Pattern[A], fn func(A) B) Pattern[B] {
 	})
 }
 
-func MapWithSpan[A, B any](
-	p Pattern[A],
-	fn func(A, models.Span) B,
-) Pattern[B] {
-	return PatternFunc[B](func(ctx *Context) Match[B] {
-		result := p.Match(ctx)
-
-		if result.Kind != Matched {
-			return Match[B]{
-				Kind:  result.Kind,
-				Start: result.Start,
-				End:   result.End,
-				Err:   result.Err,
-			}
-		}
-
-		span := ctx.Span(result.Start, result.End)
-
-		return Match[B]{
-			Kind:  Matched,
-			Value: fn(result.Value, span),
-			Start: result.Start,
-			End:   result.End,
-		}
-	})
-}
-
 func MapWithLocation[A, B any](
 	p Pattern[A],
 	fn func(A, models.Span) B,

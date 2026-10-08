@@ -50,7 +50,7 @@ func Postfix(target ast.Expr) Pattern[ast.Expr] {
 }
 
 func Index(target ast.Expr) Pattern[ast.Expr] {
-	return MapWithSpan(
+	return MapWithLocation(
 		Many1(
 			Between(
 				Tok(lexer.L_BRACKET),
@@ -71,7 +71,7 @@ func Index(target ast.Expr) Pattern[ast.Expr] {
 }
 
 func Call(target ast.Expr) Pattern[ast.Expr] {
-	return MapWithSpan(
+	return MapWithLocation(
 		Between(
 			Tok(lexer.L_PARENTHESES),
 			SepBy(Expression(), Tok(lexer.COMMA)),

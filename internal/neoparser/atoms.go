@@ -40,7 +40,7 @@ func RawNumber() Pattern[string] {
 }
 
 func NumberLiteral() Pattern[ast.Expr] {
-	return MapWithSpan(
+	return MapWithLocation(
 		Seq2(
 			RawNumber(),
 			Optional(
