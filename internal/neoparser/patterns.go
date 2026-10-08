@@ -102,18 +102,38 @@ func Newline() Pattern[lexer.Token] {
 }
 
 func Type() Pattern[*ast.TypeRef] {
-	return Map(
-		Locate(
-			Name(),
+	return OneOf(
+		Map(
+			Locate(
+				OneOf(
+					Kw(lexer.ENTERO),
+					Kw(lexer.CADENA),
+					Kw(lexer.REAL),
+					Kw(lexer.LOGICO),
+				),
+			),
+			func(kw Located[lexer.Keyword]) *ast.TypeRef {
+				return &ast.TypeRef{
+					NodeInfo: ast.NodeInfo{
+						Span: kw.Span,
+					},
+					Name: kw.Value.String(),
+				}
+			},
 		),
-		func(name Located[string]) *ast.TypeRef {
-			return &ast.TypeRef{
-				NodeInfo: ast.NodeInfo{
-					Span: name.Span,
-				},
-				Name: name.Value,
-			}
-		},
+		Map(
+			Locate(
+				Name(),
+			),
+			func(name Located[string]) *ast.TypeRef {
+				return &ast.TypeRef{
+					NodeInfo: ast.NodeInfo{
+						Span: name.Span,
+					},
+					Name: name.Value,
+				}
+			},
+		),
 	)
 }
 
