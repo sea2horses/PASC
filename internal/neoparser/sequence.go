@@ -48,6 +48,69 @@ func Seq2[A, B any](
 	})
 }
 
+type Trio[A, B, C any] struct {
+	First  A
+	Second B
+	Third  C
+}
+
+func Seq3[A, B, C any](
+	a Pattern[A],
+	b Pattern[B],
+	c Pattern[C],
+) Pattern[Trio[A, B, C]] {
+	return PatternFunc[Trio[A, B, C]](func(ctx *Context) Match[Trio[A, B, C]] {
+		start := ctx.Pos
+
+		ra := a.Match(ctx)
+		if ra.Kind != Matched {
+			ctx.Reset(start)
+
+			return Match[Trio[A, B, C]]{
+				Kind:  ra.Kind,
+				Start: start,
+				End:   ra.End,
+				Err:   ra.Err,
+			}
+		}
+
+		rb := b.Match(ctx)
+		if rb.Kind != Matched {
+			ctx.Reset(start)
+
+			return Match[Trio[A, B, C]]{
+				Kind:  rb.Kind,
+				Start: start,
+				End:   rb.End,
+				Err:   rb.Err,
+			}
+		}
+
+		rc := c.Match(ctx)
+		if rc.Kind != Matched {
+			ctx.Reset(start)
+
+			return Match[Trio[A, B, C]]{
+				Kind:  rc.Kind,
+				Start: start,
+				End:   rc.End,
+				Err:   rc.Err,
+			}
+		}
+
+		return Match[Trio[A, B, C]]{
+			Kind: Matched,
+			Value: Trio[A, B, C]{
+				First:  ra.Value,
+				Second: rb.Value,
+				Third:  rc.Value,
+			},
+			Start: start,
+			End:   ctx.Pos,
+		}
+	})
+}
+
 func Left[A, B any](
 	a Pattern[A],
 	b Pattern[B],
