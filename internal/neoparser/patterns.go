@@ -3,6 +3,7 @@ package neoparser
 import (
 	"pseint-compiled/internal/ast"
 	"pseint-compiled/internal/lexer"
+	"pseint-compiled/internal/semantic"
 )
 
 type Pattern[T any] interface {
@@ -133,6 +134,19 @@ func Type() Pattern[*ast.TypeRef] {
 					Name: name.Value,
 				}
 			},
+		),
+	)
+}
+
+func TimeUnit() Pattern[semantic.TimeUnit] {
+	return OneOf(
+		If(
+			Kw(lexer.MILISEGUNDOS),
+			semantic.MILISEGUNDOS,
+		),
+		If(
+			Kw(lexer.SEGUNDOS),
+			semantic.SEGUNDOS,
 		),
 	)
 }
