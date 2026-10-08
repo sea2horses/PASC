@@ -61,3 +61,38 @@ func ElseStmt() Pattern[*ast.Else] {
 		},
 	)
 }
+
+func While() Pattern[ast.Stmt] {
+	return Map(
+		Seq2(
+			Locate(
+				Between(
+					Seq2(
+						Kw(lexer.MIENTRAS),
+						Optional(Kw(lexer.QUE)),
+					),
+					Expression(),
+					Optional(
+						Kw(lexer.HACER),
+					),
+				),
+			),
+			Left(
+				StatementBlock(),
+				Seq2(
+					Newline(),
+					Kw(lexer.FINMIENTRAS),
+				),
+			),
+		),
+		func(p Pair[Located[ast.Expr], []ast.Stmt]) ast.Stmt {
+			return &ast.While{
+				NodeInfo: ast.NodeInfo{
+					Span: p.First.Span,
+				},
+				Condition: p.First.Value,
+				Stmts:     p.Second,
+			}
+		},
+	)
+}
