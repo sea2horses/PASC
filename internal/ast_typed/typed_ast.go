@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"pseint-compiled/internal/ast"
 	"pseint-compiled/internal/models"
-	"pseint-compiled/internal/operators"
 	"pseint-compiled/internal/semantic"
 )
 
@@ -107,7 +106,7 @@ func (v VariableExpr) IsMutable() bool {
 
 type Operator struct {
 	ast.NodeInfo
-	Op operators.OperatorType
+	Op semantic.OperatorType
 }
 
 type UnaryOperation struct {
