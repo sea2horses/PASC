@@ -4,7 +4,6 @@ import (
 	"pseint-compiled/internal/ast"
 	"pseint-compiled/internal/lexer"
 	"pseint-compiled/internal/models"
-	"pseint-compiled/internal/semantic"
 	"slices"
 )
 
@@ -142,18 +141,25 @@ func Expression() Pattern[ast.Expr] {
 			operator := BinaryOperator().Match(ctx)
 
 			if !operator.OK() {
-				// Assuming Failed means ordinary no-match.
-				// Committed/fatal errors should be propagated.
+
+				if operator.Kind == Failed {
+					return Match[ast.Expr]{
+						Kind:  Failed,
+						Start: operator.Start,
+						End:   operator.End,
+						Err:   operator.Err,
+					}
+				}
 				break
 			}
 
 			current := operator.Value
-			currentPrec := semantic.BinaryOperatorPrecedence(current.Type)
+			currentPrec := current.Precedence()
 
 			// Reduce pending operators
 			for len(operatorStack) > 0 {
 				top := operatorStack[len(operatorStack)-1]
-				topPrec := semantic.BinaryOperatorPrecedence(top.Type)
+				topPrec := top.Precedence()
 
 				// Assuming all binary operators are left-associative
 				if topPrec < currentPrec {

@@ -3,7 +3,6 @@ package ast
 import (
 	"fmt"
 	"pseint-compiled/internal/models"
-	"pseint-compiled/internal/operators"
 	"pseint-compiled/internal/semantic"
 	"pseint-compiled/internal/utils"
 	"strings"
@@ -88,11 +87,15 @@ func (t TypeRef) String() string {
 
 type Operator struct {
 	NodeInfo
-	Type operators.OperatorType
+	Type semantic.OperatorType
 }
 
 func (o Operator) String() string {
 	return o.Type.String()
+}
+
+func (o Operator) Precedence() int8 {
+	return semantic.BinaryOperatorPrecedence(o.Type)
 }
 
 type UnaryOperation struct {
