@@ -137,3 +137,23 @@ func Write() Pattern[ast.Stmt] {
 		},
 	)
 }
+
+func Read() Pattern[ast.Stmt] {
+	return MapWithLocation(
+		After(
+			Kw(lexer.LEER),
+			SepBy1(
+				Expression(),
+				Tok(lexer.COMMA),
+			),
+		),
+		func(read []ast.Expr, span models.Span) ast.Stmt {
+			return &ast.Read{
+				NodeInfo: ast.NodeInfo{
+					Span: span,
+				},
+				Into: read,
+			}
+		},
+	)
+}
